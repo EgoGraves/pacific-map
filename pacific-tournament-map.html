@@ -97,6 +97,11 @@ button,input,select{font:inherit; color:inherit}
 .info ul{list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px}
 .info li{padding:8px 10px; border-left:4px solid var(--orange); background:var(--paper); border-radius:0 6px 6px 0}
 .info li b{font-weight:700}
+.actrow{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+.actrow .walk{margin-top:0}
+button.walk{cursor:pointer; font:inherit; font-weight:700}
+.roomflag{display:inline-block; margin:8px 0 2px; padding:4px 10px; border-radius:6px; background:var(--orange); color:var(--on-orange); font-weight:700}
+.toast{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 20px); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:8px; font-weight:700; z-index:20}
 .walk{display:inline-flex; align-items:center; margin-top:12px; padding:10px 14px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-weight:700; text-decoration:none; min-height:42px}
 
 .side{display:grid; gap:28px; padding:0 16px; align-content:start}
@@ -496,6 +501,7 @@ let byId = {};
 let nodes = {};
 let rounds = [];
 let selected = null;
+let focusRoom = null;   // room text from a shared link
 let zi = 0;
 let layers = {};
 const ZOOMS = [1, 1.6, 2.4, 3.2];
@@ -641,6 +647,7 @@ function markMine(){
 // ==================== selection ====================
 function select(id, opts){
   opts = opts || {};
+  if(id !== selected || !opts.keepRoom) focusRoom = opts.room || null;
   selected = id;
   C.buildings.forEach(b => {
     const n = nodes[b.id], on = b.id === id;
@@ -777,6 +784,23 @@ function roundLine(r){
   li.append(b, document.createTextNode(r.room ? ` in ${r.room}` : ', room not set yet'));
   return li;
 }
+function shareURL(part){
+  const base = location.href.split('#')[0];
+  return base + '#' + C.id + (part ? '/' + encodeURIComponent(part) : '');
+}
+function toast(msg){
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), 2200);
+}
+async function shareLink(title, part){
+  const url = shareURL(part);
+  if(navigator.share){
+    try { await navigator.share({title, text:title, url}); return; }
+    catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(`${title} ${url}`); toast('Link copied. Paste it in a text.'); }
+  catch(e){ window.prompt('Copy this link:', url); }
+}
 function renderInfo(){
   const box = document.getElementById('info');
   box.textContent = '';
@@ -791,6 +815,7 @@ function renderInfo(){
   const where = C.id === 'dvc' ? b.where : z.where;
   p.textContent = `${where ? where + '. ' : ''}Official map grid ${b.grid}.`;
   box.append(h, p);
+  if(focusRoom){ const f = document.createElement('div'); f.className = 'roomflag'; f.textContent = `Room ${focusRoom}`; box.append(f); }
   if(b.note){ const n = document.createElement('p'); n.className = 'note'; n.textContent = b.note; box.append(n); }
   if(me){
     const d = metersBetween([me.lat, me.lon], b.geo);
@@ -809,7 +834,10 @@ function renderInfo(){
   a.href = `https://maps.apple.com/?daddr=${b.geo[0]},${b.geo[1]}&dirflg=w`;
   a.target = '_blank'; a.rel = 'noopener';
   a.textContent = 'Walk there in Apple Maps';
-  box.append(a);
+  const sh = document.createElement('button'); sh.className = 'walk'; sh.textContent = focusRoom ? 'Share this room' : 'Share this building';
+  sh.onclick = () => shareLink(focusRoom ? `Room ${focusRoom}` : (b.code ? `${b.name}` : b.name), focusRoom || b.code || b.id);
+  const row = document.createElement('div'); row.className = 'actrow'; row.append(a, sh);
+  box.append(row);
 }
 
 // ==================== index ====================
@@ -929,7 +957,15 @@ function renderRounds(){
       else if(!id && r.autoB) setBuilding('', false);
     });
     const actions = document.createElement('div'); actions.className = 'actions';
-    actions.append(show, rm);
+    const shr = document.createElement('button'); shr.className = 'btn'; shr.textContent = 'Share';
+    shr.onclick = () => {
+      const what = [r.round, r.event].filter(Boolean).join(', ');
+      const where = r.room || (r.building ? byId[r.building].name : '');
+      if(!where){ toast('Add a room first.'); return; }
+      shareLink(what ? `${what}: ${where}` : where, r.room || (byId[r.building].code || r.building));
+    };
+    const left = document.createElement('div'); left.style.display = 'flex'; left.style.gap = '8px'; left.append(show, shr);
+    actions.append(left, rm);
     card.append(
       field('Round', 'round', r, {placeholder:`Round ${i+1}`}),
       field('Event', 'event', r, {placeholder:'DI, Prose…', list:'events'}),
@@ -993,10 +1029,33 @@ function setCampus(id, push){
   store('tourney-maps-campus', C.id);
   if(push){ try { history.replaceState(null, '', '#' + C.id); } catch(e){} }
 }
-window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if(byCampus[h] && h !== C.id) setCampus(h, false); });
+function readHash(){
+  const raw = location.hash.slice(1);
+  const i = raw.indexOf('/');
+  const cid = i < 0 ? raw : raw.slice(0, i);
+  let part = i < 0 ? '' : raw.slice(i + 1);
+  try { part = decodeURIComponent(part); } catch(e){}
+  return {cid: byCampus[cid] ? cid : null, part: part.trim()};
+}
+function applyHash(){
+  const {cid, part} = readHash();
+  if(!cid) return false;
+  if(!C || C.id !== cid) setCampus(cid, false);
+  if(part){
+    const lower = part.toLowerCase();
+    const direct = C.buildings.find(b => (b.code || '').toLowerCase() === lower || b.id === lower);
+    const id = direct ? direct.id : detectBuilding(part);
+    if(id){
+      const isRoom = !direct;
+      select(id, {room: isRoom ? part : null});
+      setTimeout(() => { setZoom(Math.max(zi, 1)); centerOn(id); }, 60);
+    }
+  }
+  return true;
+}
+window.addEventListener('hashchange', applyHash);
 
-const startHash = location.hash.slice(1);
-setCampus(byCampus[startHash] ? startHash : recall('tourney-maps-campus', 'dvc'), false);
+if(!applyHash()) setCampus(recall('tourney-maps-campus', 'dvc'), false);
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(layoutTags);
 })();
 </script>

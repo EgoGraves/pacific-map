@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tournament maps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F6F7F8; --card:#FFFFFF; --ink:#1B2226; --muted:#5A646B; --line:#D7DDE1;
+  --ground:#E8ECEE; --off:#F3F5F6; --hatch:#DCE1E4;
+  --bldg:#C8CFD4; --bldg-edge:#AFB7BD; --tower:#7F8A92;
+  --lot:#8D979E; --lot-ink:#FFFFFF;
+  --road:#FFFFFF; --road-edge:#C9D0D5; --walk:#FFFFFF;
+  --river:#A7CFE2; --river-ink:#2D6B8A;
+  --field:#DCE6DC; --field-edge:#C3D3C3;
+  --orange:#F47920; --orange-edge:#C25B0E; --on-orange:#1A1004;
+  --me:#2F6FE4; --me-halo:rgba(47,111,228,.16);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#121517; --card:#181D20; --ink:#E9EDEF; --muted:#9BA5AC; --line:#2C3439;
+    --ground:#1D2327; --off:#171B1E; --hatch:#22292D;
+    --bldg:#343D43; --bldg-edge:#414B52; --tower:#6E7A82;
+    --lot:#4B555C; --lot-ink:#E9EDEF;
+    --road:#2C3439; --road-edge:#38424A; --walk:#2A3237;
+    --river:#1F4C63; --river-ink:#8CC4DE;
+    --field:#1F2A22; --field-edge:#28362B;
+    --orange:#F5873A; --orange-edge:#FFB27A; --on-orange:#1A1004;
+    --me:#5B9BFF; --me-halo:rgba(91,155,255,.2);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#121517; --card:#181D20; --ink:#E9EDEF; --muted:#9BA5AC; --line:#2C3439;
+  --ground:#1D2327; --off:#171B1E; --hatch:#22292D;
+  --bldg:#343D43; --bldg-edge:#414B52; --tower:#6E7A82;
+  --lot:#4B555C; --lot-ink:#E9EDEF;
+  --road:#2C3439; --road-edge:#38424A; --walk:#2A3237;
+  --river:#1F4C63; --river-ink:#8CC4DE;
+  --field:#1F2A22; --field-edge:#28362B;
+  --orange:#F5873A; --orange-edge:#FFB27A; --on-orange:#1A1004;
+  --me:#5B9BFF; --me-halo:rgba(91,155,255,.2);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size:16px; line-height:1.45; -webkit-text-size-adjust:100%;
+}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--paper)}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--orange); outline-offset:2px}
+
+.top{max-width:1200px; margin:0 auto; padding:22px 16px 14px}
+.top h1{font-size:clamp(1.7rem, 6vw, 2.5rem); line-height:1.05; margin:0 0 14px; letter-spacing:-0.015em}
+.top p{margin:12px 0 0; color:var(--muted); max-width:60ch}
+.tabs{display:flex; gap:4px; padding:4px; background:var(--card); border:1px solid var(--line); border-radius:10px; max-width:440px}
+.tabs button{flex:1; border:0; background:transparent; border-radius:7px; padding:9px 10px; min-height:44px; font-weight:700; cursor:pointer; color:var(--muted); line-height:1.15}
+.tabs button small{display:block; font-weight:400; font-size:.78rem}
+.tabs button[aria-selected="true"]{background:var(--ink); color:var(--paper)}
+
+.layout{max-width:1200px; margin:0 auto; display:grid; gap:22px; padding:0 0 28px}
+.mapcard{background:var(--card); border-block:1px solid var(--line)}
+.stage{position:relative}
+.mapwrap{overflow:auto; aspect-ratio:var(--ar,1); -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
+#map{display:block; width:calc(var(--z,1) * 100%); height:auto; aspect-ratio:var(--ar,1); user-select:none; -webkit-user-select:none}
+.toolbar{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-top:1px solid var(--line)}
+.zoomset{display:flex; gap:6px}
+.toolbar button{height:42px; min-width:42px; border-radius:8px; border:1px solid var(--line); background:var(--paper); font-weight:700; cursor:pointer; padding:0 12px; line-height:1}
+.zoomset button{font-size:1.25rem; padding:0}
+.zoomset #zfit{font-size:.85rem; padding:0 12px}
+.toolbar button:disabled{opacity:.4; cursor:default}
+.locbtn{display:flex; align-items:center; gap:8px}
+.locbtn svg{width:18px; height:18px; flex:none}
+.locbtn[aria-pressed="true"]{background:var(--me); border-color:var(--me); color:#fff}
+.locstatus{margin:0; padding:0 16px 12px; font-size:.92rem; color:var(--muted)}
+
+.legend{display:flex; flex-wrap:wrap; gap:6px 16px; padding:10px 16px; font-size:.85rem; color:var(--muted); border-top:1px solid var(--line); margin:0; list-style:none}
+.legend li{display:flex; align-items:center; gap:7px}
+.sw{width:14px; height:14px; border-radius:3px; flex:none}
+.sw.o{background:var(--orange)} .sw.b{background:var(--bldg)} .sw.p{background:var(--lot)} .sw.r{background:var(--river)} .sw.c{background:repeating-linear-gradient(45deg,var(--orange) 0 2px,transparent 2px 5px); border:1px solid var(--orange)}
+
+.info{padding:14px 16px 16px; border-top:1px solid var(--line); min-height:96px}
+.info h3{font-size:1.3rem; line-height:1.15; margin:0 0 4px}
+.info p{margin:0; color:var(--muted)}
+.info .note{color:var(--ink); margin-top:8px}
+.info .dist{color:var(--ink); font-weight:700; margin-top:6px}
+.info ul{list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px}
+.info li{padding:8px 10px; border-left:4px solid var(--orange); background:var(--paper); border-radius:0 6px 6px 0}
+.info li b{font-weight:700}
+.actrow{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+.actrow .walk{margin-top:0}
+button.walk{cursor:pointer; font:inherit; font-weight:700}
+.roomflag{display:inline-block; margin:8px 0 2px; padding:4px 10px; border-radius:6px; background:var(--orange); color:var(--on-orange); font-weight:700}
+.toast{position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 20px); transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:8px; font-weight:700; z-index:20}
+.walk{display:inline-flex; align-items:center; margin-top:12px; padding:10px 14px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-weight:700; text-decoration:none; min-height:42px}
+
+.side{display:grid; gap:28px; padding:0 16px; align-content:start}
+.side h2{font-size:1.35rem; margin:0 0 4px; line-height:1.15}
+.side .hint{margin:0 0 14px; color:var(--muted); font-size:.95rem}
+
+.know{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px 16px}
+.know ul{margin:0; padding:0; list-style:none; display:grid; gap:10px}
+.know li{padding-left:14px; position:relative}
+.know li::before{content:""; position:absolute; left:0; top:.62em; width:6px; height:6px; border-radius:50%; background:var(--orange)}
+.know .src{display:block; color:var(--muted); font-size:.85rem}
+.sched{width:100%; border-collapse:collapse; margin-top:12px; font-size:.95rem; font-variant-numeric:tabular-nums}
+.sched th,.sched td{text-align:left; padding:6px 0; border-top:1px solid var(--line)}
+.sched th{font-weight:400; color:var(--muted)}
+.sched td{text-align:right; font-weight:700}
+.sched caption{text-align:left; font-weight:700; padding-bottom:4px}
+
+.rounds-list{display:grid; gap:12px}
+.round{border:1px solid var(--line); border-left:4px solid var(--line); background:var(--card); border-radius:8px; padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.round.set{border-left-color:var(--orange)}
+.round label{display:grid; gap:3px; font-size:.78rem; color:var(--muted); font-weight:700}
+.round input,.round select{width:100%; font-size:16px; font-weight:400; color:var(--ink); padding:9px 10px; border:1px solid var(--line); border-radius:6px; background:var(--paper); min-height:42px}
+.round .actions{grid-column:1/-1; display:flex; gap:10px; justify-content:space-between}
+.btn{border:1px solid var(--line); background:var(--paper); border-radius:6px; padding:9px 14px; font-weight:700; cursor:pointer; min-height:42px}
+.btn.go{background:var(--orange); border-color:var(--orange); color:var(--on-orange)}
+.btn.go:disabled{background:var(--paper); border-color:var(--line); color:var(--muted); cursor:default}
+.btn.quiet{color:var(--muted)}
+.add{margin-top:12px; width:100%; border:2px dashed var(--line); background:transparent; border-radius:8px; padding:12px; font-weight:700; cursor:pointer; color:var(--ink)}
+
+.zone{margin:0 0 18px}
+.zone h3{font-size:1.05rem; margin:0; display:flex; align-items:center; gap:8px}
+.zone h3::before{content:""; width:10px; height:10px; background:var(--orange); border-radius:2px}
+.zone.quiet h3::before{background:var(--bldg)}
+.zone p{margin:2px 0 6px 18px; color:var(--muted); font-size:.9rem}
+.zone ul{list-style:none; margin:0; padding:0}
+.idx{display:flex; align-items:baseline; gap:8px; width:100%; text-align:left; background:none; border:0; border-left:3px solid transparent; padding:9px 4px 9px 15px; cursor:pointer}
+.idx .code{font-weight:700; min-width:2.6em; color:var(--muted)}
+.idx .nm{font-weight:700}
+.idx .ct{font-size:.75rem; font-weight:700; background:var(--ink); color:var(--paper); border-radius:999px; padding:1px 7px; align-self:center; white-space:nowrap}
+.idx .dots{flex:1; border-bottom:2px dotted var(--line); transform:translateY(-4px); min-width:12px}
+.idx .ref{font-variant-numeric:tabular-nums; color:var(--muted); font-weight:700; white-space:nowrap}
+.idx[aria-current="true"]{border-left-color:var(--orange); background:var(--card)}
+details.more summary{cursor:pointer; font-weight:700; padding:6px 0; color:var(--muted)}
+
+footer{max-width:1200px; margin:0 auto; padding:8px 16px 28px; color:var(--muted); font-size:.88rem}
+footer p{margin:0 0 6px; max-width:70ch}
+footer a{color:inherit; font-weight:700}
+
+/* map styling */
+.frame{fill:var(--paper)}
+.ground{fill:var(--ground)}
+.off{fill:var(--off)}
+.hatchline{stroke:var(--hatch); stroke-width:1.2}
+.hatchline.o{stroke:var(--orange); stroke-width:1.6; opacity:.55}
+.river{fill:none; stroke:var(--river); stroke-width:26; stroke-linejoin:round; stroke-linecap:round}
+.water{fill:var(--river)}
+.canal{fill:none; stroke:var(--river); stroke-width:5; stroke-linecap:round; stroke-linejoin:round}
+.bike{fill:none; stroke:var(--muted); stroke-width:1.2; stroke-dasharray:5 4; opacity:.55}
+.lot{fill:var(--lot)}
+.field{fill:var(--field); stroke:var(--field-edge); stroke-width:1}
+.track{fill:none; stroke:var(--field-edge); stroke-width:6}
+.plaza{fill:var(--walk); opacity:.7}
+.road-edge{fill:none; stroke:var(--road-edge); stroke-linecap:round; stroke-linejoin:round}
+.road{fill:none; stroke:var(--road); stroke-linecap:round; stroke-linejoin:round}
+.walkway{fill:none; stroke:var(--walk); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round}
+.lm{fill:var(--bldg); stroke:var(--bldg-edge); stroke-width:1}
+.cz{fill:url(#hatcho); stroke:var(--orange-edge); stroke-width:1.5; stroke-dasharray:6 4}
+.tower{fill:var(--tower)}
+.mapedge{fill:none; stroke:var(--line); stroke-width:1}
+.streetlab{font-size:12px; font-weight:700; fill:var(--muted); paint-order:stroke; stroke:var(--road); stroke-width:4px; stroke-linejoin:round; text-anchor:middle; dominant-baseline:central}
+.lotlab{font-size:12px; font-weight:700; fill:var(--lot-ink); text-anchor:middle; dominant-baseline:central}
+.lmlab{font-size:12px; fill:var(--muted); paint-order:stroke; stroke:var(--ground); stroke-width:3px; stroke-linejoin:round; dominant-baseline:central}
+.riverlab{font-size:13px; font-style:italic; fill:var(--river-ink); text-anchor:middle; dominant-baseline:central}
+.offlab{font-size:12px; font-style:italic; fill:var(--muted); text-anchor:middle}
+.czlab{font-size:11px; font-weight:700; fill:var(--orange-edge); paint-order:stroke; stroke:var(--ground); stroke-width:3px; text-anchor:middle; dominant-baseline:central; letter-spacing:.04em}
+.gridlab{font-size:11px; font-weight:700; fill:var(--muted); text-anchor:middle; dominant-baseline:central}
+.tb{cursor:pointer}
+.tb .shape{fill:var(--orange); stroke:var(--orange-edge); stroke-width:1.5}
+.tb text, .tag text{fill:var(--on-orange); font-weight:700; text-anchor:middle; dominant-baseline:central; pointer-events:none}
+.tb.plain .shape{fill:var(--bldg); stroke:var(--bldg-edge); stroke-width:1}
+.tb.plain text{fill:var(--ink); font-weight:700}
+.tb.plain.mine .shape{fill:var(--orange); stroke:var(--orange-edge); stroke-width:1.5}
+.tb.plain.mine text{fill:var(--on-orange)}
+.tb text.out{fill:var(--ink); paint-order:stroke; stroke:var(--ground); stroke-width:3px; stroke-linejoin:round}
+.tag{cursor:pointer}
+.tag rect{fill:var(--orange); stroke:var(--ground); stroke-width:2.5}
+.tag text{font-size:18px}
+.leader{stroke:var(--orange-edge); stroke-width:2}
+.tb.sel .shape, .tb.plain.sel .shape, .tag.sel rect{fill:var(--ink); stroke:var(--orange); stroke-width:2}
+.tb.sel text, .tb.plain.sel text, .tag.sel text{fill:var(--paper)}
+.tb.sel text.out{fill:var(--ink)}
+.leader.sel{stroke:var(--ink)}
+.tb:focus{outline:none}
+.tb:focus-visible .shape{stroke:var(--ink); stroke-width:4}
+.ring{fill:none; stroke:var(--orange); stroke-width:3; transform-box:fill-box; transform-origin:center; animation:pulse 1.6s ease-out infinite; pointer-events:none}
+@keyframes pulse{0%{transform:scale(.75); opacity:.95} 100%{transform:scale(1.6); opacity:0}}
+.badge circle{fill:var(--ink); stroke:var(--orange); stroke-width:2}
+.badge text{fill:var(--paper); font-size:12px; font-weight:700; text-anchor:middle; dominant-baseline:central}
+.compass circle{fill:var(--card); stroke:var(--ink); stroke-width:1.5}
+.compass path{fill:var(--ink)}
+.compass text{font-size:12px; font-weight:700; fill:var(--ink); text-anchor:middle; dominant-baseline:central}
+.me-acc{fill:var(--me-halo); stroke:var(--me); stroke-width:1; stroke-opacity:.6}
+.me-cone{fill:var(--me); opacity:.3}
+.me-dot{fill:var(--me); stroke:#fff; stroke-width:3}
+
+@media (prefers-reduced-motion: reduce){ .ring{animation:none; opacity:.85} }
+
+@media (min-width: 900px){
+  .layout{grid-template-columns:minmax(0,1.55fr) minmax(330px,1fr); padding:0 16px 32px; align-items:start}
+  .mapcard{border:1px solid var(--line); border-radius:12px; overflow:hidden; position:sticky; top:calc(env(safe-area-inset-top,0px) + 12px)}
+  .side{padding:0}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Tournament maps</h1>
+  <div class="tabs" role="tablist" aria-label="Campus" id="tabs"></div>
+  <p id="intro"></p>
+</header>
+
+<main class="layout">
+  <section class="mapcard" id="mapcard" aria-label="Campus map">
+    <div class="stage">
+      <div class="mapwrap" id="mapwrap">
+        <svg id="map" xmlns="http://www.w3.org/2000/svg" role="img"></svg>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="locbtn" id="locate" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 L21 3 L13 21 L11 13 Z" fill="currentColor"/></svg>My location</button>
+      <div class="zoomset">
+        <button id="zout" aria-label="Zoom out">−</button>
+        <button id="zin" aria-label="Zoom in">+</button>
+        <button id="zfit" aria-label="Show whole map">Fit</button>
+      </div>
+    </div>
+    <p class="locstatus" id="locstatus" hidden></p>
+    <ul class="legend" id="legend"></ul>
+    <div class="info" id="info" aria-live="polite"></div>
+  </section>
+
+  <div class="side">
+    <section aria-labelledby="rh">
+      <h2 id="rh">My rounds</h2>
+      <p class="hint" id="roundsHint">Copy each posting in as it goes up. Type the room the way it's posted and the building fills itself in. Saved on this device only.</p>
+      <div class="rounds-list" id="rounds"></div>
+      <button class="add" id="addRound">Add a round</button>
+    </section>
+    <section class="know" id="know" aria-labelledby="kh" hidden>
+      <h2 id="kh">Good to know</h2>
+      <div id="knowBody"></div>
+    </section>
+    <section aria-labelledby="ih">
+      <h2 id="ih">Building index</h2>
+      <p class="hint">Grid squares match the official campus map, if you need to cross-check.</p>
+      <div id="index"></div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <p id="credit"></p>
+  <p>Drawn by EgoGraves Studio with Claude. Getting lost is not a recognized event. <a href="https://ko-fi.com/egogravesstudio">ko-fi.com/egogravesstudio</a></p>
+</footer>
+
+<datalist id="events">
+  <option value="Prose"></option><option value="Poetry"></option><option value="DI"></option><option value="Duo"></option>
+  <option value="POI"></option><option value="Informative"></option><option value="Persuasion"></option><option value="ADS"></option>
+  <option value="CA"></option><option value="Impromptu"></option><option value="Extemp"></option><option value="Original Performance"></option>
+  <option value="Parli"></option>
+</datalist>
+
+<script>
+(function(){
+const NS = 'http://www.w3.org/2000/svg';
+const DVC_DATA = {"view":[-340,-320,670,610],"campus":"M367.8,-330.8 L-177,-317.8 L-177.2,-310.9 L-180.2,-294.2 L-198.9,-284.3 L-217.7,-269.3 L-235.1,-252.8 L-248.2,-238.4 L-255.3,-223.5 L-258.7,-208.6 L-256.6,-82.5 L-258.3,-75.4 L-274.8,-37.8 L-327.3,61.4 L-329.6,72.3 L-330.7,88.7 L-327.3,174.4 L-327.2,250.2 L-328.1,255.4 L-331.7,264.3 L-331.4,270.9 L-333.1,278.2 L-333.2,288.8 L-327.9,292.2 L-133.4,288.5 L119.4,281.1 L243.7,282.6 L260.7,278.3 L290.9,260.5 L334,228.9 L351.9,220.4 L367.6,216.1 L359.2,122.5 L389.3,39.9 L389.3,-12.7 L346.4,-95.3 L340.4,-122.3 L343.4,-268 Z","lots":[{"d":"M-46.2,254.3 L-36.7,254.2 L-36.6,260.6 L22.2,259.7 L22.1,253.8 L32.7,253.5 L31.7,216.3 L21,216.6 L21.1,221.5 L-17.8,222.3 L-37.5,222.6 L-37.5,217.8 L-46.7,217.9 Z","label":"Lot 2","at":[-6.9,239.8]},{"d":"M106.1,91.5 L111.7,92.2 L117.5,98.5 L118,171.8 L120.6,246.2 L110.2,254.2 L110,246.3 L107.6,251.5 L104.9,254.8 L99.3,258.4 L51.5,259.2 L51.4,249.2 L41.8,253.3 L40.6,142.7 L50.5,138.2 L50.3,100.7 L53.1,97.5 L106.8,96.5 Z","label":"Lot 1","at":[81.0,178.8]},{"d":"M-161.1,-164.9 L-163.3,-280.6 L-154.5,-287.5 L-154.7,-295 L-116.6,-295.1 L-71.7,-296.9 L-75.3,-281.2 L-74.9,-269.1 L-67.2,-264.2 L-56.8,-255.6 L-55.1,-185.1 L-59.2,-180.8 L-83.7,-168.7 L-95.9,-174.4 L-150.8,-173.4 Z","label":"Lot 7","at":[-111.3,-232.1]},{"d":"M-269.7,177.9 L-319,179.6 L-317.7,260 L-309.5,259.9 L-309.4,265.1 L-189.6,263.1 L-189.8,257.3 L-178.8,256.9 L-182.1,165.9 L-191.7,166.4 L-192.1,170.1 L-213.1,170.5 L-217.3,176.9 L-230.1,177.5 L-230.2,168.4 L-261.7,167.4 L-263.5,173.9 L-263.1,177.8 Z","label":"Lot 4","at":[-248.2,218.3]},{"d":"M139.7,-198.5 L140,-180.3 L143.6,-180.5 L144.1,-171.1 L107.5,-170.2 L107.2,-179.2 L100.2,-177.9 L76.4,-177.7 L81.4,-169.4 L79.3,-168.4 L41.2,-167.8 L37.6,-173.7 L30.4,-178.6 L30.2,-186.7 L22.5,-187.3 L24.9,-194.5 L10.7,-194 L10.6,-202.8 L1.1,-202.8 L-0.2,-287.5 L9.2,-287.7 L9.2,-292.5 L149.4,-296.2 L150.3,-199.7 Z","label":"Lot 8","at":[77.2,-235.5]},{"d":"M-312.4,167.8 L-294.7,167.6 L-286.6,163.3 L-286.9,134.4 L-321.8,134.8 L-321.5,167.9 Z","label":"Lot 4A","at":[-304.4,150.9]},{"d":"M223.8,8.1 L232.2,8.2 L231.6,33.1 L223.7,33.3 Z","label":"Lot 10A","at":[227.7,20.6]},{"d":"M-205.9,-265.5 L-205.2,-187.7 L-214.7,-190.2 L-233.5,-189.8 L-232.4,-185.9 L-241.5,-185.9 L-241.4,-234.6 L-234.6,-235.1 L-235.1,-252.8 L-215.5,-254 L-215.7,-264.4 Z","label":"Lot 6","at":[-222.2,-221.6]},{"d":"M234.2,-41.8 L236.9,-19 L236,-13.2 L251.6,-13.9 L251.2,-43.3 Z","label":null,"at":null},{"d":"M205.8,-168.4 L190.6,-168.2 L190,-173.1 L181.4,-173.2 L181.3,-215.6 L185.4,-224.3 L183.7,-294.1 L188.5,-296.9 L260.8,-299.3 L263.2,-182 L241.5,-180.7 L227.1,-171.6 L214.6,-170.5 L214.1,-174.2 L206,-173.5 Z","label":"Lot 9","at":[222.0,-235.4]},{"d":"M241.5,-67.8 L234.9,-67.4 L235,-55 L219.9,-54.1 L219.9,-73.7 L229.4,-74.7 L228.9,-130.4 L240.9,-130.6 Z","label":"Lot 10","at":[233.0,-90.0]},{"d":"M139.7,-198.5 L140,-180.3 L143.6,-180.5 L144.1,-171.1 L107.5,-170.2 L107.2,-179.2 L100.2,-177.9 L76.4,-177.7 L81.4,-169.4 L79.3,-168.4 L41.2,-167.8 L37.6,-173.7 L30.4,-178.6 L30.2,-186.7 L22.5,-187.3 L24.9,-194.5 L10.7,-194 L10.6,-202.8 L1.1,-202.8 L-0.2,-287.5 L9.2,-287.7 L9.2,-292.5 L149.4,-296.2 L150.3,-199.7 Z","label":null,"at":null},{"d":"M-167.6,141.6 L-163.9,262.6 L-66.4,261.1 L-68.4,139.7 Z","label":"Lot 3","at":[-116.4,201.2]},{"d":"M-164.7,-164.6 L-177,-162.9 L-177.7,-181 L-189,-180.7 L-193.9,-173 L-198.9,-171 L-198.7,-159.8 L-188.2,-159 L-188.9,-139.3 L-196,-116.3 L-194.8,-27.7 L-270.8,-26.9 L-270.7,-33.4 L-257.6,-33.9 L-255.7,-75.5 L-249.3,-75.6 L-251.6,-182 L-201.8,-182.8 L-202.6,-270.4 L-194.1,-270.4 L-194.2,-274.9 L-167.8,-276.3 Z","label":"Lot 5","at":[-212.4,-137.3]}],"roads":[{"d":"M-17.9,-471.2 L-23,-465.6 L-25.6,-389.6 L-29.2,-350.3 L-28,-321.4","w":9},{"d":"M-276.1,-641.8 L-277.2,-607.9 L-275.4,-546 L-275.4,-318.2","w":9},{"d":"M-333.2,298.1 L-333.1,278.2 L-325.9,250.2 L-330.7,88.7 L-329.6,72.3 L-327.3,61.4 L-274.8,-37.8 L-258.3,-75.4 L-256.6,-82.5 L-256.3,-93.1 L-258.7,-208.6 L-255.3,-223.5 L-248.2,-238.4 L-217.7,-269.3 L-198.9,-284.3 L-180.2,-294.2 L-166.9,-296.4","w":9},{"d":"M-354.6,-332.7 L-371.1,-289.9","w":9},{"d":"M107.5,287.7 L107.4,264.3 L104.2,260.2 L99.3,258.4","w":6},{"d":"M-150.8,-173.4 L-95.9,-174.4","w":6},{"d":"M-294.1,-306.4 L-300.7,-313.7 L-313.2,-321.1 L-354.6,-332.7 L-384.6,-344 L-411.4,-370.6 L-458.8,-406.7 L-489.8,-429.5 L-518.2,-443.5 L-572.4,-448 L-632.1,-461.6 L-666.8,-476.4 L-684.6,-486.7 L-698.5,-499.1 L-710.5,-531.8 L-720.4,-569.3 L-753.4,-606.7 L-778.8,-623.3 L-802.8,-631.3 L-823.8,-628.5 L-850.1,-618.1 L-883.1,-596.3 L-893.9,-583.1 L-902,-567 L-907.3,-539.3 L-901.9,-523.8 L-904.7,-512.8 L-939.3,-465.8 L-973.2,-444.4 L-1079,-411.8","w":9},{"d":"M162.1,-325.9 L162.8,-303.8","w":9},{"d":"M-511.6,127.1 L-501.8,175.8 L-486.9,194.7 L-469.4,211.9 L-449.4,224.3 L-421.4,234.8 L-402.1,249.3 L-387.7,272.8 L-379.6,302 L-368.4,334.4 L-290.1,557.1 L-281.8,577.1 L-268,594.7 L-203.4,644.6 L-198,651.3 L-192.1,664.2 L-188.6,688.6 L-183.2,801","w":12},{"d":"M-226.9,-326.8 L-274.9,-325.3 L-300.7,-313.7","w":12},{"d":"M-317.1,-253.4 L-311.8,-267 L-307.8,-284 L-301.9,-296.7 L-294.1,-306.4 L-287.3,-311.9 L-275.4,-318.2 L-238.4,-316.6","w":12},{"d":"M164.2,-210.5 L163.9,-201.7 L153.4,-189.6 L152.8,-183.9 L155.2,-178.6 L159.9,-175.3 L164,-174.2 L171,-176.4 L173.4,-178.7 L174.6,-182.3 L173.6,-253.2","w":6},{"d":"M169.6,-460.9 L162.7,-429.3 L161.9,-336.4","w":12},{"d":"M-17,-298.8 L-17.5,-321.6 L-13.1,-332","w":6},{"d":"M-8,-298.8 L-7.3,-220.2 L-5.8,-205.7 L2.5,-189.3 L8.8,-182.7 L24,-173.8 L39.4,-162.6 L49.4,-158.5 L57,-157.6 L79.1,-160.6 L93.7,-166.5 L98.5,-171 L100.2,-177.9","w":6},{"d":"M-166.9,-296.4 L-145.3,-294.6 L-116.6,-295.1 L-35.1,-299 L-8,-298.8 L137.1,-303","w":9},{"d":"M239.6,-327.7 L239.5,-305.2","w":6},{"d":"M-95.9,-174.4 L-99,-295.8","w":6},{"d":"M-71.7,-296.9 L-75.3,-281.2 L-74.9,-269.1","w":6},{"d":"M-72,-174.8 L-59.2,-180.8 L-46.8,-193.7 L-41.2,-202.3 L-39.3,-217.7 L-42.3,-238 L-53.3,-252.7 L-74.9,-269.1","w":6},{"d":"M-154.7,-295 L-150.8,-173.4","w":6},{"d":"M100.2,-177.9 L102.3,-185.6 L102.8,-197.2 L99.5,-301.9","w":6},{"d":"M-74.9,-269.1 L-72,-174.8","w":6},{"d":"M139.7,-198.5 L137.1,-303","w":6},{"d":"M-257.4,-153.6 L-181.8,-155.6 L-175.5,-160.4 L-174.6,-165.6 L-177.4,-275.5 L-187.2,-290.5","w":6},{"d":"M-13.1,-332 L-8.7,-321.8 L-8,-298.8","w":6},{"d":"M100.2,-177.9 L107.2,-179.2 L140,-180.3 L139.7,-198.5 L10.7,-194 L2.5,-189.3","w":6},{"d":"M-199.4,-55.6 L-200.1,-76.7","w":6},{"d":"M-277.2,-33.1 L-198.8,-36.3 L-199.4,-55.6","w":6},{"d":"M-200.1,-76.7 L-200.7,-94.8 L-256.3,-93.1","w":6},{"d":"M-312.2,174.2 L-327.8,174.4","w":6},{"d":"M-189.6,263.1 L-192.1,170.1 L-213.1,170.5 L-217.3,176.9 L-232.4,177.6 L-269.7,177.9 L-273.7,173.3 L-312.2,174.2","w":6},{"d":"M-74.6,261.2 L-77.3,145.6 L-156.4,147.1 L-155,262.7","w":6},{"d":"M-52.7,202.2 L27.2,200.3 L26.9,138.5 L18.7,116.7","w":6},{"d":"M-50.8,260.8 L-54.5,152.4 L-46.5,104.5 L-56.8,37.8 L-56.8,28.7 L-55.1,14.7 L-45.8,-21.2","w":6},{"d":"M231.6,-141.2 L233.2,-95.7 L232.8,-64.6 L236.9,-19 L234.8,-0.9 L231.6,11.6 L232.4,76.4 L214.8,76.6 L186.5,68.8 L165.8,70.3 L155.8,74.2 L151.7,79","w":6},{"d":"M107.8,273 L110.2,254.2 L106.8,96.5 L53.1,97.5 L50.3,100.7 L51.5,259.2","w":6},{"d":"M173.4,-178.7 L215.2,-180.3 L232.8,-182.2","w":6},{"d":"M50.3,100.7 L37.3,86.5 L22.8,80.8 L0.8,32.4 L-3.6,19.5 L-2.4,-1.4 L-3.2,-22.8","w":6},{"d":"M37.3,86.5 L38.9,74.8 L32.3,41.5 L31.5,21.2 L45,13.5 L63.1,-0.9 L77.7,-9.7 L84.7,-16.1 L93.8,-33.6 L95.6,-43.4 L103,-57.9 L117.3,-60.5 L132.9,-56.5 L144.8,-59.5 L144.9,-85.8 L150.5,-104.8 L232.8,-106.7","w":6},{"d":"M-59.2,-85.6 L-57.8,-105.8 L-52.6,-122 L-53.8,-136.3 L-67.9,-176.7","w":6},{"d":"M231.5,-305.1 L232.8,-182.2","w":6},{"d":"M56.7,259.1 L57.1,273.6","w":6},{"d":"M57.1,273.6 L47.9,289.1","w":6},{"d":"M99.3,258.4 L104.9,254.8 L110,246.3","w":6},{"d":"M99.3,258.4 L-329.6,265.1","w":6},{"d":"M-170.2,-343.6 L-167.4,-595.1","w":6},{"d":"M-100,-346.7 L-135.8,-346.3","w":6},{"d":"M-77,-595.3 L-80.9,-347.1 L-100,-346.7","w":6},{"d":"M-170.2,-343.6 L-208.8,-343.7 L-204.3,-595.1 L-186.4,-595.1","w":6},{"d":"M-112.7,-346.4 L-112.6,-329.5","w":6},{"d":"M-150.7,-449.3 L-152.7,-446.1 L-153,-346.5 L-135.8,-346.3","w":6},{"d":"M-167.1,-328.2 L-170.2,-343.6","w":6},{"d":"M171.7,-304 L171.5,-326.1","w":9},{"d":"M-303.3,16.8 L-292.4,23.9","w":6},{"d":"M-283.9,39.5 L-282.8,47.5 L-280.2,53 L-267.9,63","w":6},{"d":"M367.6,216.1 L351.9,220.4 L334,228.9 L290.9,260.5 L260.7,278.3 L243.7,282.6 L218.9,285.6 L66.1,288.7","w":9},{"d":"M396.4,208.3 L367.6,216.1","w":9},{"d":"M367.8,-330.8 L405.3,-331.6","w":12},{"d":"M70.9,-346.2 L71,-431.9 L68.4,-443.4","w":6},{"d":"M364.2,217.1 L359.6,198.4 L354.2,129 L378.8,37.7 L380.1,18.1 L379,-0.3 L376.4,-11.6 L365.7,-39 L346,-80.9 L339.2,-100.1 L336.8,-119.8 L336.1,-243.4 L336.8,-262.6 L339.7,-274.2 L363.8,-330.7","w":6},{"d":"M364.2,217.1 L367.4,242.2 L376.6,280.1","w":6},{"d":"M162.8,-168.7 L140.8,-118.9 L137.2,-114 L131.5,-111.1","w":6},{"d":"M-267.7,125.5 L-294.2,125.5 L-312.1,113.5 L-330.1,105.6","w":6},{"d":"M-293.3,26.5 L-293.2,31.6 L-291.3,35.5 L-283.9,39.5 L-276.1,37.2 L-272.2,30.8 L-272.2,27.3 L-274.1,22.5 L-277.7,19.4 L-281.6,18.2 L-288.5,19.7 L-291.4,22.3 L-293.3,26.5","w":6},{"d":"M133.9,-335.7 L133.2,-394 L89.2,-392.9 L89.4,-374.4 L133.4,-374.4","w":6},{"d":"M242.6,-352.1 L314.4,-352.9 L314,-430.8 L315.8,-434.6","w":6},{"d":"M242.6,-352.1 L243.1,-338.1","w":6},{"d":"M239.6,-519.6 L242.6,-352.1","w":6},{"d":"M-132.6,315.4 L-133,293.3","w":6},{"d":"M-25.9,290.8 L-24.6,312.8","w":6},{"d":"M-24.6,312.8 L-264.5,319.1 L-256.8,335.4","w":6},{"d":"M11.2,308.1 L11.6,323.1 L115.4,320.2 L115.5,287.5","w":6},{"d":"M157.4,286.6 L158.6,305.6 L161.5,311.5 L166.2,316.1 L218.9,315.6","w":6},{"d":"M218.9,315.6 L220.7,444.5 L260.3,443.6 L258.5,384.2 L240,383.7 L239.3,322.2 L234.7,317 L218.9,315.6","w":6},{"d":"M218.9,285.6 L218.9,315.6","w":6},{"d":"M-218,-622.3 L-221.7,-603 L-226.9,-326.8","w":6},{"d":"M-385,282.9 L-376.9,281.2 L-371.2,277.7 L-356.3,257.1 L-365.3,262.1 L-375.6,257.5","w":6},{"d":"M-365.8,271.6 L-391,237.8 L-397.2,233.2 L-410.9,242.7","w":6},{"d":"M-356.3,257.1 L-352.3,249.8 L-348.2,238 L-346.5,220.2 L-345.4,172 L-388.6,112.7 L-404.5,123.6 L-395.6,136.9 L-391.1,135.2 L-375.9,153.7 L-364.9,145.2","w":6},{"d":"M-357.2,94.4 L-385.7,116.8","w":6},{"d":"M-156.4,147.1 L-161.9,138.6 L-166.9,119.6 L-168.5,86 L-159.9,66.1 L-145,42.9","w":6},{"d":"M-351.5,-95.5 L-379.9,-113.3 L-402.1,-123.8 L-411.8,-123 L-436.1,-108.9 L-440.6,-112.2 L-430.3,-129.6","w":6},{"d":"M-426.9,-238.4 L-407.5,-222.4 L-322.4,-209.4","w":6},{"d":"M-174.1,386.7 L-142.7,371.4 L0.8,366.8 L-0.1,337.8 L3,326.2 L3.2,310.6 L11.2,308.1","w":6},{"d":"M171.5,-326.1 L172.9,-336.7","w":12},{"d":"M375.6,-341.7 L172.9,-336.7","w":12},{"d":"M-238.4,-316.6 L162.1,-325.9","w":12},{"d":"M-166.9,-296.4 L-167.1,-328.2","w":9},{"d":"M251.4,-305.2 L251.3,-328","w":6},{"d":"M-317.1,-253.4 L-322.4,-209.4 L-331.8,-157 L-348.6,-102.4 L-371.2,-48.7 L-401.7,3.7 L-417.5,22.8 L-453.5,52.3 L-483.6,71.4 L-500.2,78.1 L-518.4,81.4","w":12},{"d":"M171.5,-326.1 L317.5,-329.6","w":12},{"d":"M172.9,-336.7 L170.3,-429.9 L173.1,-444.4 L176.2,-450.7 L180.8,-455.1","w":12},{"d":"M172.9,-336.7 L161.9,-336.4","w":12},{"d":"M161.9,-336.4 L162.1,-325.9","w":12},{"d":"M161.9,-336.4 L-226.9,-326.8","w":12},{"d":"M162.1,-325.9 L171.5,-326.1","w":12},{"d":"M325.7,-198 L327.8,-150.4 L322.2,-143.4 L280.8,-142.3","w":6},{"d":"M280.8,-142.3 L231.6,-141.2","w":6},{"d":"M231.2,-162.6 L262.9,-163.7","w":6},{"d":"M162.8,-303.8 L171.7,-304","w":9},{"d":"M192.2,-304.4 L251.4,-305.2","w":6},{"d":"M171.7,-304 L192.2,-304.4","w":6},{"d":"M137.1,-303 L162.8,-303.8","w":9},{"d":"M-24,328.9 L-24.6,312.8","w":6},{"d":"M-24,328.9 L-23.4,346.1","w":6},{"d":"M317.5,-329.6 L367.8,-330.8","w":12},{"d":"M31.5,21.2 L23.9,11.4 L8.1,7.2","w":6},{"d":"M-300.7,-313.7 L-309.5,-301.1 L-313,-291.5 L-316.9,-267.5 L-317.1,-253.4","w":12},{"d":"M11.1,289.9 L11.2,308.1","w":6},{"d":"M296.2,-329.1 L295.8,-352.8","w":6},{"d":"M231.6,-141.2 L231.2,-162.6 L232.8,-182.2","w":6},{"d":"M150.4,-141.1 L130.4,-147.1 L126.7,-146.9 L123.3,-146 L113.8,-139.4","w":6},{"d":"M147.2,-6.4 L144.8,-59.5","w":6},{"d":"M-272.7,-42.4 L-283.4,-47.8 L-283.6,-50.6 L-279.5,-59.1","w":6},{"d":"M-271.3,-111.2 L-269.8,-102.2 L-266.8,-98 L-263.7,-95.8 L-256.3,-95.1","w":6},{"d":"M-257.4,-150 L-279.3,-150.3","w":6},{"d":"M-279.7,-185.6 L-258.2,-185.7","w":6},{"d":"M-256.2,-219.6 L-278.5,-228","w":6},{"d":"M172.9,-289.8 L171.7,-304","w":6},{"d":"M232.8,-182.2 L252.3,-185.9 L251.4,-305.2","w":6},{"d":"M164,-174.2 L162.8,-168.7","w":6},{"d":"M173.6,-253.2 L173.2,-271.5","w":6},{"d":"M47.9,289.1 L-344,298.5 L-379.6,302 L-407.4,308.4 L-496.7,341.1 L-603.7,406.8 L-629.4,418.2 L-669.1,433.4 L-686.5,437.8 L-711.7,452.3 L-728,465.9 L-749.5,489","w":9},{"d":"M57.1,273.6 L66.1,288.7","w":6},{"d":"M66.1,288.7 L47.9,289.1","w":9},{"d":"M162.6,-280.5 L164.2,-210.5","w":6},{"d":"M162.8,-303.8 L162.6,-280.5","w":6},{"d":"M173.2,-271.5 L172.9,-289.8","w":6}],"walks":["M-384.3,-872.7 L-382.8,-868.2 L-370.9,-854.5 L-360.4,-839.5 L-352.1,-819.2 L-334.8,-795.2 L-325.9,-787.5 L-294.4,-772.3 L-278.3,-752.4 L-248.9,-699.8 L-237.6,-670.5 L-231.6,-639 L-238.1,-332.1 L-177,-333.4 L-177.2,-310.9 L-229.6,-310.9 L-245.1,-292 L-276.8,-257.5 L-280.3,-252 L-284.5,-234.4 L-285,-183.9 L-289.2,-112.4 L-294.1,-74.2 L-303.1,-61.8 L-305.6,-56.1 L-314.4,-17.1 L-319,-5.1 L-323.4,2.1 L-338.6,15.9 L-426.8,71.4 L-470,101.3 L-510.9,131.9 L-580.3,175.9 L-619.7,205 L-624.3,210.6 L-627.2,217.9 L-627.4,231.7 L-622,273 L-613.1,314.7 L-606,376.5 L-606.8,382.3 L-613.6,392.5 L-612.6,394.5 L-604.4,398.2 L-603.7,400.2 L-602.2,420.6 L-608.6,429.9 L-607.7,431.7 L-599.1,436.8 L-593.9,451.5 L-583.3,469.6 L-570.5,486.6 L-567.3,492.8 L-557,542.4 L-545.9,607.4 L-546.4,624.1 L-548.8,631.2 L-601.7,742.3 L-602.5,750.9 L-601.1,754.5 L-595.3,759.7 L-586,761.6 L-542.5,750.1","M-222.2,158.7 L-224.9,158.6 L-225.5,140.5 L-230.1,141.1 L-231.6,84.2 L-235.3,84 L-235.6,70.9","M-235.6,70.9 L-230.4,70.7 L-230.4,68.7 L-240,68.9","M-240,61.8 L-267.9,63","M-235.5,-18.8 L-235.3,-27.3","M-148.4,43 L-70,39.9","M-116.5,41.6 L-123.1,-163","M-119.8,-75.1 L-74.3,-67.5","M-74.3,-67.5 L-73.9,-37.1","M-55.6,-32 L-73.9,-37.1","M-73.9,-37.1 L-70.8,-22 L-55.8,20.3 L-70,39.9","M48,-15.2 L1.2,-22.6 L56.1,-45.6 L48.9,-77.8 L32.6,-79.9 L12.9,-69.4","M27.9,-77.3 L49.8,-121.3 L51.7,-132.4","M34.9,57 L51.1,61.9 L62.7,61.6 L75.1,51.4 L89.3,34.6 L106.2,27.9 L127.2,12.2 L134.9,4.1 L138.3,-4.4 L138.3,-13.4 L122.4,-46.5 L117.3,-60.5","M48,-15.2 L75.6,-8.3","M-195,-23.8 L-204.7,-5.6 L-198.5,1.2 L-198,65.8","M18.7,116.7 L17.3,95.9 L-3.4,88.2 L-15,89 L-21,91.8 L-28.9,89.6 L-34,86.5 L-47,98.5 L-64.5,120.4 L-68,127.9 L-68.4,139.7","M17.3,95.9 L22.8,80.8 L13.4,81.6 L-8.2,69.6 L-26.5,62.1","M-34,86.5 L-32.5,76.8 L-26.5,62.1 L-29.9,45.4 L-42.4,41 L-56.6,39.2","M-178.4,139.5 L-167.6,141.6","M-144.9,-49.8 L-166,-50 L-175.3,-51.5 L-190.2,-57 L-195.4,-56.2","M-73.9,-37.1 L-82.4,-36.5","M-118.7,-29.1 L-103,-29.9 L-103,-37.7 L-118.8,-37.3","M-195,-23.8 L-196,-116.3 L-194.3,-125.4 L-188.9,-139.3 L-173.6,-154.1 L-161.9,-160.4 L-151.3,-164.4 L-141.4,-166.3 L-134.8,-166.2 L-129.9,-163.5 L-123.1,-163 L-101.2,-167.9 L-65.4,-169.8 L-56,-175 L-38.8,-195.9 L-35.3,-214 L-36.3,-234.4 L-41.9,-247.1 L-47.7,-256 L-63.2,-267 L-68.8,-272.6 L-72.2,-280.3 L-66.2,-290.7 L-58,-293.6 L-22.4,-294.4 L-17.1,-291.2","M20.9,-168.8 L-1.1,-180.8 L-7.9,-186 L-10.3,-190.8 L-20,-191.3 L-38,-185.6 L-46.9,-185.8","M-10.3,-190.8 L-23.7,-222.4 L-24.6,-259.8 L-21.1,-269.7 L-13.5,-276.9 L-13.7,-287.5 L-17.1,-291.2","M-267.3,88.3 L-273.5,88.8 L-283.8,94.9 L-289.3,94.9 L-302.2,90.2 L-306,87.1 L-308.8,82.1 L-307.4,70.3 L-304.7,66.5 L-300.5,65 L-295.9,65 L-291.6,67 L-291.2,76.3 L-282.5,76.3","M-222.2,158.7 L-222.2,167.5","M-267.3,88.3 L-268.2,169.3 L-261.7,167.4 L-230.2,168.4 L-182.1,165.9","M-182.1,165.9 L-166.7,164.4","M-68.4,139.7 L-53.1,139.5","M-197.8,-17.3 L-208,-14.6 L-217,-20 L-227.4,-16.6 L-235.5,-9.5","M-224.9,158.6 L-233.6,158.5 L-233.8,161.8 L-254,162.7","M-254,162.7 L-254.1,167.6","M-239.1,87.6 L-220.9,87.3","M-234.4,61.7 L-221.2,61.6","M-221.2,61.6 L-220.9,87.3","M-17.1,-73.7 L-16.9,-61.4","M-136.6,2.5 L-136.7,9.9","M-148.4,43 L-159.1,54 L-183.2,68.5","M-148.4,43 L-198.4,43.5","M-198.4,43.5 L-209,43.7 L-227.7,52.8 L-234.3,53.1","M-198.7,140.1 L-178.4,139.5","M-225.5,140.5 L-198.7,140.1","M-231.1,100.1 L-221,97.2 L-215.8,93.1 L-204.6,90.5 L-199.8,87.6","M37.6,-96.9 L20.6,-100.7 L19.7,-105.1 L-49.1,-104.6 L-53.7,-118.5","M90.6,-186.8 L27.1,-184.9 L27,-179.6 L20.9,-168.8 L10,-159.8 L8.8,-134.6 L4.2,-134.8 L4.6,-105.4","M48.9,-77.8 L66.4,-81.2 L103.9,-82.3 L105,-77.3 L112.3,-72.5","M87,-81.5 L89.9,-74.8 L103,-57.9","M112.5,-90.5 L112.3,-93.6","M248,-179.4 L264.2,-179.7 L261.7,-321.5","M178.9,-297.5 L179.4,-184.7 L178.4,-179 L173.6,-172.7 L167.5,-169.5 L162.8,-168.7 L149.7,-173.4 L147.1,-180.6 L146.2,-189.5 L148.2,-194.4 L157.7,-204.4 L155.1,-296.5","M149.7,-173.4 L144.1,-171.1 L107.5,-170.2 L96.7,-157.2 L74.3,-150.3 L66.5,-152.5 L57,-151.6 L45.4,-153.7 L34.6,-158 L26.7,-163.2 L20.9,-168.8","M-327.3,288.9 L-314.2,289 L-292.8,280.6 L-260.5,280.6 L-255.4,277 L-247.5,273.9 L-229.6,276.2 L-220.6,273.3 L-204.7,272 L-190.4,275.4 L-160.3,270.5 L-159.8,257.9 L-163.9,257.8 L-167.6,141.6","M40.5,129.2 L41.9,259.4","M-15.1,201.3 L-14.3,217.5 L41.4,215.2","M-83.7,-168.7 L-81.2,-152.2 L-99.5,-151.8 L-101.2,-167.9","M56.1,-45.6 L67.3,-30.9 L48,-15.2","M-35.3,-214 L-19.5,-210.9","M-57.8,-105.8 L-60.9,-112.2 L-67.7,-137.2 L-77,-142.3 L-77,-152.9 L-81.2,-152.2","M-99.5,-151.8 L-99,-72","M-120.3,-94.9 L-99.2,-95.5","M-92.2,91.1 L-92.5,98.2 L-87.7,98.5 L-87.5,92.5","M-87.5,92.5 L-98.9,92.2","M-29.9,45.4 L-32.6,16.3 L-3.4,14.7","M20.9,-16 L39.6,-12.7 L18.3,-3.8 L15.8,0.4 L27,3.8 L66.5,-2.6","M41.7,91.3 L95.6,90.5 L144.8,53 L145.1,42.2 L231.7,40.8","M179.1,-319.1 L187.8,-311.8 L198.3,-311 L219.5,-315.3 L229.2,-320.4 L261.7,-321.5 L266.4,-318.7 L316.1,-318.2 L337.1,-319.8 L361.4,-324.7","M-284.6,168.9 L-284.9,154.5 L-279.7,152.7 L-268,152","M54.9,-145.9 L57,-151.6 L56.8,-166.6 L78.9,-167.1","M51.7,-132.4 L54.9,-145.9","M-267.3,88.3 L-239.1,87.6 L-240,61.8 L-234.4,61.7 L-235.5,-14.8","M-92.2,91.1 L-93,68.7","M-40.4,138.3 L-48.9,138.2 L-53.1,139.5","M-82.4,-36.5 L-94.3,-36","M-94.3,-36 L-103.2,-35.6","M-99.1,-75.5 L-58.6,-76.9","M12.9,-69.4 L2.9,-72.2 L-49,-70.6 L-74.3,-67.5 L-60.7,-60 L-28.9,-63.9 L-2.3,-64.4 L12.9,-69.4","M1.2,-22.6 L-18.1,-24.1 L-55.6,-32 L-45.8,-21.2 L-18.1,-24.1","M42.5,-78.8 L49.8,-121.3","M138.3,-6.4 L147.2,-6.4","M147.2,-6.4 L170.7,-6.8 L170.9,0.7 L234.4,0.4","M361.2,27.8 L360.1,-35.8 L355.3,-40.9 L308.8,-41.1 L277.9,-43.6 L251.2,-43.3 L234.2,-41.8","M-174.6,-165.6 L-183.9,-174.3 L-194.8,-181.6 L-205.2,-187.7 L-214.7,-190.2","M-235.3,-27.3 L-235.3,-34.8","M-167.6,141.6 L-68.4,139.7 L-66.4,261.1","M-33.1,-71.1 L-28.9,-63.9","M41.8,253.3 L22.1,253.8","M-235.5,-14.8 L-235.5,-18.8","M-235.5,-17.2 L-265.4,-16.6 L-265.4,-14.1 L-251.4,-14.4","M-251.4,-14.4 L-247.1,-14.6","M-235.5,-14.8 L-247.1,-14.6","M-3.6,19.5 L19.5,26.5","M19.5,26.5 L31.8,28.2","M-64.3,39.6 L-56.6,39.2","M-70,39.9 L-64.3,39.6","M259.7,379.1 L249.7,378.8 L248.2,328.8 L242.6,316.5 L235.3,311.9 L227.4,309.2 L226.8,291.6","M326.4,319.4 L323.5,317.4 L325.7,314.5 L328.4,316.3 L326.4,319.4","M319.4,317 L323.5,317","M328.5,317.1 L332.9,316.9","M327.2,319.1 L333.2,331.6","M324.9,319.2 L319.7,330.1","M-11.2,329.1 L-5.6,328.7 L-6.1,321.1 L-3.9,321.1 L-3.7,332.4 L135.8,328.9 L135.2,292.9 L126.9,293.2 L127.8,329.1","M127.4,314.3 L135.5,314.1","M131.5,293.1 L131.3,280.5","M-12,302.9 L-10.8,353.1 L-15.3,356.1 L-130.2,358.9","M126.9,293.2 L21.4,296","M34.6,295.6 L34.5,282","M135.6,318.6 L164.6,318","M135.7,322.9 L145.3,322.7","M-32.5,297.2 L-132.9,298.3 L-347.8,304.5 L-366.2,306.3 L-369.1,310 L-367.8,316.1","M-74.3,-67.5 L-74.7,-76.3","M-178,101.4 L-168.1,100.9","M-308.5,77.8 L-300.7,77.4","M155.1,-296.5 L178.9,-297.5","M154.8,-309.8 L154.7,-318.6","M179.4,-309.6 L178.9,-297.5","M155.1,-296.5 L154.8,-309.8","M179.1,-319.1 L179.4,-309.6","M157.7,-204.4 L167.7,-200.1 L184.1,-200.2","M-225.1,17.1 L-216.9,19.7","M-227.2,27.7 L-215.6,28.7","M-234.6,40.3 L-231.3,36.5 L-227.2,27.7 L-225.1,17.1 L-226.5,9.1 L-224.6,2.3 L-219.5,-2.5 L-207.9,-3.9 L-204.7,-5.6","M-215.8,-2.9 L-209.6,1.6 L-210.9,12.7 L-216.9,19.7 L-214.5,37.9 L-209,43.7","M-178,101.4 L-199.5,101.5","M37.3,86.5 L50.1,77.5 L68.2,72.5 L68.5,90.8","M68.2,72.5 L83.3,61.3","M76.3,66 L71.7,54.2","M-117.3,6 L-148.5,8.2","M-148.5,8.2 L-158.8,11.4","M-158.8,11.4 L-160.1,43.1","M131.3,280.5 L140.4,274.4 L154.3,260.7 L164.8,258.9 L200.6,257.9 L213.6,254.7 L221.8,246.2 L228.4,224.3 L226.3,119.5","M121.8,287.4 L115.6,91.5 L86.4,92.5 L83.9,90.6","M134.9,4.1 L135,10.6 L118.4,37.2","M19.5,26.5 L22,14.4 L6.1,10.6 L7,7","M8.1,7.2 L3.7,6.2","M3.7,6.2 L-9.3,3.4","M-122.9,121.8 L-122.6,127.7","M-122.6,127.7 L-117.2,127.5 L-117.2,124.4 L-125.6,124.7","M-125.6,124.7 L-127.5,124.8 L-127,141.3","M-112.6,140.9 L-113.3,121.8","M-155.6,141.4 L-157.3,78.2 L-158.7,78.2 L-158.9,64.6","M-159.4,87.8 L-159.5,82.2 L-157.2,82.2","M-156.2,87.5 L-159.4,87.8","M-135.3,63.6 L-135.4,58.1","M-135.4,58.1 L-131.2,58","M231.8,-342.6 L231.2,-387.7 L229.2,-388 L228.1,-429.8 L233.6,-446.1 L435.5,-450.6 L444.9,-445.5","M178.7,-342.8 L179.1,-319.1","M178.7,-342.8 L151.2,-342.3","M-24.3,-343 L-23.5,-340.5 L-19.7,-337.8 L-7.4,-337 L147.3,-340.4 L151.2,-342.3","M154.7,-318.6 L179.1,-319.1","M151.4,-319.1 L154.7,-318.6","M-1.5,-314.8 L-1.7,-337.1","M-1.5,-305 L-17.1,-291.2","M-1.5,-305 L-1.5,-314.8","M-177,-333.4 L-42.1,-335.3 L-38.3,-336.5 L-34.9,-342.3 L-33.7,-369.7 L-31.9,-382.6 L-29.8,-471.9 L-24.8,-479.8 L-20.9,-481.6 L-12.9,-480.2 L-9.6,-477.8","M-21.6,-338.5 L-37.1,-338","M201.1,-451.2 L198.1,-445.5 L189.4,-451.3 L186.8,-450.6 L178.8,-444.8 L176,-439.2 L176.6,-423.5 L174.4,-415.2 L176,-390.7 L176,-349.3 L178.7,-342.8 L186.3,-341.4 L373,-346.7","M-158.8,-287.8 L-160.3,-284.5 L-164.4,-280.9 L-161.9,-160.4","M-155.9,-311.3 L-156.4,-300.6","M-156.4,-300.6 L-158.8,-287.8","M-155.9,-311.3 L-156.4,-333.7","M-177.2,-310.9 L-155.9,-311.3","M-238.1,-332.1 L-251.5,-332.3","M-252.7,-310.6 L-229.6,-310.9","M103.4,-347.9 L103.6,-339.5","M128.8,-340.1 L128.2,-367.7 L88,-366.8","M150.5,-104.8 L153,-108.6 L160.6,-133.3 L168.4,-167.6","M226.8,-166.9 L228,-110.5 L153,-108.6","M311,-231.3 L304.5,-232.6 L263.2,-227.4","M170.9,0.7 L169.6,3.1 L169.7,42.2","M220.1,-75.2 L228.4,-75.8 L228,-110.5","M155.8,74.2 L152.2,66.6 L131.5,70.6 L124.5,68.4","M115.6,91.5 L112.5,77.6","M168.4,-167.6 L176.6,-165.8 L226.8,-166.9","M226.8,-166.9 L228.7,-171 L242.4,-179.2 L248,-179.4","M-278.1,-40.9 L-262.9,-71.5 L-260.1,-83.7 L-262.6,-203.9 L-260,-221.1 L-256.8,-229.8 L-246.1,-246.7 L-222.9,-271.6 L-201.5,-288.4 L-176.2,-302.4 L-174.6,-307.4 L-177.2,-310.9","M-156.4,-333.7 L-155.8,-343.4 L-153,-346.5","M-368.4,308 L-373.4,293.5 L-389.2,296.2 L-384.9,311.1 L-368.4,308","M-332.7,170.2 L-330.6,238.4 L-331.3,245.7 L-338.5,270.5 L-339.7,288.7","M-323.4,170 L-332.7,170.2","M-268.1,168.6 L-323.4,170","M226.8,291.6 L243.9,288.9 L268.9,280.1 L284.1,272 L320.1,244.6 L337.4,233.5 L357.3,224.1 L364.8,222.1","M132.4,-203.4 L129.4,-203.4 L129.3,-210.3","M132.4,-203.4 L139.6,-203.6","M121.8,-210.2 L139.4,-210.6","M134.6,-170.8 L134.6,-176.6 L132.5,-184.8 L132.4,-203.4","M139,-226.3 L157,-226.5","M168.4,-167.6 L167.5,-169.5","M-339.7,288.7 L-327.3,288.9","M-376.9,281.2 L-374.9,291.8 L-371.7,294 L-343.7,291.9 L-339.7,288.7","M210.6,292.2 L226.8,291.6","M135.2,292.9 L210.6,292.2","M3,296.6 L-20.8,297.4","M-20.8,297.4 L-32.5,297.2","M21.4,296 L3,296.6","M151.2,-342.3 L151.4,-319.1","M151.2,-342.3 L154.3,-348 L154.7,-450.1 L156.8,-479.9","M-177,-333.4 L-155.9,-311.3","M-177.2,-310.9 L-156.4,-333.7","M-88.7,140.2 L-89.2,131.1 L-95.9,131.3 L-101,111.7 L-101.3,100.9 L-96.8,98.2 L-92.4,84.5","M-116.5,41.6 L-93,68.7","M-112.9,131.8 L-95.9,131.3","M12.9,-69.4 L-3.2,-22.8","M0.8,-34.3 L12.6,-35.2 L13.8,-45.9 L30.2,-56.5 L27.9,-77.3","M-300.7,71.2 L-300.7,82.8 L-294.3,85.7 L-289.4,85.7 L-289.8,70.9 L-300.7,71.2"],"water":["M128.3,6.3 L134.7,-4.1 L134.7,-6.6 L128.8,-21.5 L124.5,-24.2 L114.3,-28.1 L102.2,-24.4 L95.6,-18.4 L90.2,-11.4 L79.4,-1.9 L63.1,9.2 L60.5,13.3 L57.8,21.1 L56.4,29.9 L49.6,45.7 L51.5,50.3 L63.1,54.9 L80.1,40.6 L88.3,30.2 L105.3,22.5 Z","M-221.7,3.8 L-221.3,1.6 L-219.5,0.4 L-218.5,1.8 L-215.5,2.4 L-214.4,4.4 L-213.6,10.5 L-215.3,14.8 L-220.4,13.4 L-224.6,10.7 L-223.9,7.2 Z","M-228.4,32.8 L-229.2,42.3 L-224.8,43.6 L-223.7,41.7 L-225.1,39.5 L-222.9,35 L-222.9,32.2 Z","M-225.8,21.2 L-224.4,26.6 L-217.9,27.3 L-217.4,22.9 L-219.5,20.4 L-222.1,22.6 Z"],"canal":["M-246.6,-334.1 L-240.9,-639.9 L-242.2,-647.1 L-259.1,-700.3 L-288.5,-751.5 L-297.5,-763.7 L-303.4,-768.3 L-336,-786.5 L-339.6,-791","M-546.2,143.9 L-345.6,3.7 L-338.6,-1.7 L-332.2,-9.8 L-326.6,-31.7 L-296.8,-195.3 L-292.6,-251.1 L-287.2,-261.9 L-252.2,-298.7 L-249.4,-304.9 L-249.2,-309.3"],"fields":["M240.1,188.8 L243.2,196.2 L250.2,199.3 L353.9,197.6 L350.3,130.4 L347.6,116.5 L342.4,104.2 L333.9,93.1 L318.2,84 L304.2,81.5 L237.5,82 Z","M155,223.8 L215.5,222.4 L216.8,212.6 L214.6,113 L212.8,103.2 L152.4,104.6 L151,114.4 L153.3,214 Z","M267.1,-45.8 L335.8,-46.5 L331.6,-113.2 L307,-114.6 L292,-108.8 L280.7,-99.8 L273.4,-90.2 L266.9,-79.4 Z","M330.5,-313.7 L333.9,-202.6 L301.7,-201.5 L300.6,-237.1 L270.3,-236.1 L267.8,-311.8 Z","M274.2,-41.3 L358.6,-40.9 L360.4,80.9 L276.6,81.8 Z"],"tracks":["M141.8,84.1 L150.4,84 L150.5,89.7 L158.4,81.7 L169.5,75.8 L181.9,73.5 L188.4,73.9 L194.4,75.2 L205.8,80.7 L214.9,89.3 L220.9,100.4 L223.1,112.8 L225,218.7 L223.7,224.9 L218.2,236.2 L209.5,245.3 L198.4,251.2 L186,253.5 L173.5,251.8 L162.1,246.3 L153.8,238.7 L153.9,242.9 L145.4,243 Z"],"commons":["M20.6,-100.7 L19.7,-105.1 L4.6,-105.4 L6.6,-74.2 L-7.8,-28.6 L-10,-18.9 L-9.6,-3.4 L7.5,1.3 L19.4,-12.2 L20.9,-16 L20.9,-19.5 L19.6,-30.3 L56.1,-45.6 L48.9,-77.8 L42.5,-78.8 L49.8,-121.3 L37.6,-96.9 L25,-94.9 Z","M-131.7,42.7 L-131,63.6 L-126.8,63.5 L-126.8,66.4 L-105.4,66 L-105.5,68.9 L-89.1,68.5 L-89.3,63.5 L-101.7,51.8 L-101.5,41.7 L-116.5,41.6 Z"],"pool":"M183,-57.6 L207.8,-58.2 L208.4,-4.9 L183.7,-4.2 Z","construction":"M-59.5,114 L-23.1,90.9 L18.3,112 L29.4,214.1 L-58.3,216.4 Z","constructionAt":[-18.6,164.5],"others":["M149.2,-77.9 L150.9,-8.4 L175.3,-9.1 L173.9,-67 L170.6,-66.9 L170.4,-78.4 Z","M-295.6,115.1 L-295.6,121.1 L-271.9,121.2 L-271.8,115.2 Z","M-62.2,139.5 L-61.6,158.1 L-67.8,158.3 L-68.4,139.7 Z","M120.8,157.5 L121.3,170.6 L125.3,170.5 L124.8,157.3 Z","M240.6,216.2 L241.5,228.8 L255,227.8 L254,215.2 Z","M266,199 L266.2,202.5 L285.6,202.5 L285.5,198.7 Z","M239.8,175.7 L242.4,175.7 L242.2,164 L239.5,164 Z","M225.2,99.9 L225.3,114.3 L233.4,114.3 L233.3,99.8 Z","M-260.7,74.3 L-260.5,82.6 L-251.3,82.4 L-251.5,74.2 Z","M-163.4,-76.2 L-163.3,-73.2 L-158.5,-73.2 L-158.5,-76.3 Z","M-290.3,69.4 L-284.9,69.3 L-284.9,62.1 L-290.4,62.1 Z","M6.7,-118.2 L10.2,-118.2 L10.2,-110.5 L6.7,-110.5 Z M11,-108 L16.1,-107.9 L16.1,-112.1 L11,-112.1 Z"],"offbld":[],"buildings":[{"id":"h","code":"H","name":"Humanities","tourney":true,"alias":["humanities","hum"],"d":"M-97.3,-149.4 L-96.9,-133.2 L-95.6,-133.2 L-95.5,-129.4 L-98.4,-129.4 L-97.2,-77.9 L-75.5,-78.4 L-76.7,-130.3 L-80.4,-130.2 L-80.5,-133.6 L-79.4,-133.6 L-79.8,-149.8 Z","c":[-87.2,-112.3],"box":[-98.4,-149.8,22.9,71.9],"geo":[37.9695115,-122.0719941],"grid":"B2","area":1462},{"id":"bwl","code":"BWL","name":"Business & World Languages","tourney":true,"alias":["business","bfl"],"d":"M-146.2,-148.2 L-125,-148.5 L-124.3,-83.6 L-145.4,-83.4 Z","c":[-135.2,-115.9],"box":[-146.2,-148.5,22.0,65.1],"geo":[37.9695445,-122.072541],"grid":"B2","area":1374},{"id":"la","code":"LA","name":"Liberal Arts","tourney":true,"alias":["liberal arts"],"d":"M-115.2,-65.3 L-107,-65.5 L-107,-62.3 L-87.5,-62.7 L-87.4,-57.8 L-78.4,-58 L-78.2,-50.3 L-82.7,-50.2 L-82.5,-21.8 L-78.6,-21.7 L-78.4,-13.3 L-86.9,-13.3 L-86.7,-5.1 L-98.3,-4.9 L-98.4,-9.1 L-104.6,-9 L-104.6,-5.3 L-113.4,-5.2 L-113.9,-26.8 L-105.2,-27 L-105,-21.8 L-93.9,-22.1 L-94.6,-49.4 L-111.4,-48.9 L-111.7,-56.5 L-115,-56.4 Z","c":[-95.8,-34.1],"box":[-115.2,-65.5,37.0,60.6],"geo":[37.9688073,-122.0720921],"grid":"C2","area":1305},{"id":"ma","code":"MA","name":"Math and Engineering","tourney":true,"alias":["math","mathematics"],"d":"M-28.8,19.8 L-25.4,19.7 L-25.4,21.8 L-11.3,21.5 L-11.4,19.4 L-8.2,19.4 L-8.1,24.6 L-6.7,24.5 L-6.5,33.7 L-3.8,33.7 L-3.7,37.9 L-2.1,37.9 L-2,44.1 L0.4,44 L0.6,51.8 L3.8,51.7 L3.9,56.5 L6.6,56.5 L6.8,69.5 L-3.8,69.6 L-3.9,65.2 L-12.2,65.3 L-12.4,55.9 L-14.1,55.9 L-14,60.9 L-22.2,61 L-22.3,52.9 L-25.8,52.9 L-26,37.8 L-27.3,37.8 L-27.3,35.5 L-25.7,35.4 L-25.8,32.9 L-27.4,33 L-27.4,27.8 L-28.7,27.9 Z","c":[-12.0,44.7],"box":[-28.8,19.4,35.7,50.3],"geo":[37.9680971,-122.0711366],"grid":"C3","area":1087},{"id":"ccc","code":"CCC","name":"Community Conference Center","tourney":false,"alias":["conference"],"d":"M-117,-130 L-105.7,-130 L-105.8,-148.9 L-117.5,-148.9 Z","c":[-111.5,-139.5],"box":[-117.5,-148.9,11.8,18.9],"geo":[37.9697567,-122.0722704],"grid":"B2","area":217},{"id":"ecn","code":"ECN","name":"Early Childhood Ed North","tourney":false,"alias":[],"d":"M-188.2,-102 L-174.6,-102.3 L-174.6,-100.5 L-160.6,-100.9 L-160.8,-109.5 L-162.6,-109.4 L-163,-122.9 L-158,-123.1 L-158.1,-129.2 L-165.3,-129 L-166.4,-126 L-188.8,-125.4 Z","c":[-174.3,-114.1],"box":[-188.8,-129.2,30.8,28.7],"geo":[37.9695282,-122.0729857],"grid":"B2","area":681},{"id":"ecs","code":"ECS","name":"Early Childhood Ed South","tourney":false,"alias":[],"d":"M-185.8,-89.8 L-185.7,-86.1 L-182.2,-86.2 L-181.8,-75.6 L-174.7,-75.9 L-174.5,-70.8 L-169.1,-71 L-169.4,-79.2 L-163.2,-79.4 L-163.5,-87.4 L-164.8,-87.3 L-165,-93 L-175.5,-92.6 L-175.4,-90.2 Z","c":[-173.4,-83.4],"box":[-185.8,-93.0,22.7,22.2],"geo":[37.9692514,-122.072976],"grid":"B2","area":312},{"id":"ett","code":"ETT","name":"Engineering Technology (temp)","tourney":false,"alias":["engineering technology"],"d":"M0.9,-158.2 L6.1,-158.3 L9.8,-161.5 L9.8,-165.9 L6.8,-169.9 L1.4,-170.1 L-1.7,-166.4 L-2.1,-162.1 Z M22.9,-155.8 L22.9,-154.4 L15,-154.2 L15.4,-128.8 L28,-129 L27.9,-136.9 L37.6,-137 L37.5,-145.9 L29.5,-145.8 L29.3,-155.9 Z M-16.9,-167.7 L-23.7,-167.5 L-23,-142.6 L-31.8,-142.3 L-31.4,-128 L-19,-128.4 L-18.8,-123.2 L0.6,-123.7 L-0.2,-153.5 L-16.5,-153.1 Z","c":[-1.4,-142.9],"box":[-31.8,-170.1,69.4,46.9],"geo":[37.9697876,-122.0710159],"grid":"B3","area":1439},{"id":"hsf","code":"HSF","name":"Food Court & Hospitality","tourney":false,"alias":["food court","cafeteria"],"d":"M5.2,-103.5 L6.6,-74.2 L-59.7,-72.7 L-51.5,-103 Z","c":[-25.0,-88.0],"box":[-59.7,-103.5,66.3,30.8],"geo":[37.9692925,-122.0712854],"grid":"B3","area":1831},{"id":"ssc","code":"SSC","name":"Student Services Center","tourney":false,"alias":["student services"],"d":"M2.4,-61.5 L-7.8,-28.6 L-30.3,-28.4 L-68.7,-38.6 L-63.5,-56.3 L-29.5,-61.2 Z","c":[-31.5,-45.8],"box":[-68.7,-61.5,71.1,33.0],"geo":[37.9689123,-122.0713585],"grid":"C3","area":1815},{"id":"bc","code":"BC","name":"Book Center","tourney":false,"alias":["book center","bookstore"],"d":"M-19.7,-21.3 L-43.8,-20.5 L-42.8,11 L-21.2,10.3 L-21.2,12.3 L-11.1,12 L-11.2,8.8 L-9.2,8.7 L-10,-18.9 L-19.6,-18.6 Z","c":[-26.6,-4.7],"box":[-43.8,-21.3,34.7,33.7],"geo":[37.9685419,-122.0713032],"grid":"C3","area":1056},{"id":"su","code":"SU","name":"Student Union","tourney":false,"alias":["student union"],"d":"M60,-69.2 L92.3,-70.2 L92.5,-56.4 L81,-56.2 L81,-50.8 L79.4,-44.8 L85.5,-42.5 L81.5,-31.5 L66.6,-37.3 L70.4,-47 L70.8,-58.5 L60.1,-58.3 Z","c":[76.6,-55.3],"box":[60.0,-70.2,32.6,38.7],"geo":[37.9689986,-122.0701266],"grid":"C4","area":692},{"id":"ar","code":"AR","name":"Arena Theater","tourney":false,"alias":["arena"],"d":"M112.5,-90.5 L108.8,-89.3 L106.1,-86.9 L104.9,-82.6 L106.3,-78 L109.2,-74.7 L112.6,-73.7 L111.8,-69.8 L114.6,-69.8 L114.9,-71.5 L118.3,-73.3 L122,-69.8 L124.1,-72.1 L119.3,-76.7 L121.3,-81.9 L120,-86.7 L117,-89.8 Z","c":[113.9,-80.7],"box":[104.9,-90.5,19.2,20.7],"geo":[37.9692273,-122.0697025],"grid":"C4","area":246},{"id":"pac","code":"PAC","name":"Performing Arts Center","tourney":false,"alias":["performing arts"],"d":"M60,-122.9 L59.9,-114.8 L53.4,-114.9 L53.4,-111 L55.4,-111 L55.4,-94.8 L51.6,-94.4 L51.7,-87 L74.3,-87.3 L73.9,-95.1 L95.3,-95.7 L96.1,-93.5 L119.4,-93.7 L119.4,-120 L94.1,-119.9 L94,-116.7 L75.5,-116.8 L75.5,-112.9 L70.9,-113 L70.9,-115.6 L69.2,-115.6 L69.2,-122.9 Z","c":[85.6,-105.1],"box":[51.6,-122.9,67.8,35.9],"geo":[37.9694467,-122.0700248],"grid":"B4","area":1711},{"id":"pao","code":"PAO","name":"Performing Arts Offices","tourney":false,"alias":[],"d":"M94.1,-119.9 L94.1,-134.5 L92,-134.5 L92.7,-137.1 L95.5,-137.1 L95.5,-142.5 L104.2,-142.5 L104.2,-119.9 Z","c":[99.2,-131.0],"box":[92.0,-142.5,12.2,22.6],"geo":[37.9696801,-122.0698698],"grid":"B4","area":225},{"id":"a","code":"A","name":"Art Complex & Gallery","tourney":false,"alias":["art"],"d":"M192.9,-152 L173.4,-151.4 L173.9,-138.9 L188.6,-139.3 L189.4,-124.2 L163.7,-123.4 L163.4,-111.6 L216.7,-112.9 L216.6,-152.6 Z","c":[195.2,-131.2],"box":[163.4,-152.6,53.3,41.0],"geo":[37.9696823,-122.0687758],"grid":"B5","area":1592},{"id":"ftx","code":"FTX","name":"Fitness and Exercise","tourney":false,"alias":["fitness"],"d":"M151.4,-101.2 L218.8,-102.8 L219.3,-81.3 L151.9,-80.2 Z","c":[185.5,-91.4],"box":[151.4,-102.8,67.8,22.6],"geo":[37.9693233,-122.0688863],"grid":"B5","area":1431},{"id":"aq","code":"AQ","name":"Aquatics","tourney":false,"alias":["aquatics"],"d":"M209.9,-48.4 L209.9,-44.6 L207.7,-44.5 L208.2,-2.1 L219.5,-1.2 L231.3,-1.6 L230.2,-38.8 L228.2,-38.7 L227.9,-48.6 Z","c":[219.2,-24.3],"box":[207.7,-48.6,23.7,47.4],"geo":[37.968719,-122.0685023],"grid":"C5","area":1039},{"id":"gym","code":"GYM","name":"Gymnasium","tourney":false,"alias":["gymnasium"],"d":"M172.5,3.4 L172.6,39.6 L221.5,38.8 L221.3,2.7 Z","c":[197.0,21.1],"box":[172.5,2.7,49.0,36.9],"geo":[37.9683096,-122.0687557],"grid":"C5","area":1769},{"id":"hfo","code":"HFO","name":"Health Faculty Offices","tourney":false,"alias":[],"d":"M166,-1.4 L147.6,-1.2 L148,34.9 L166.4,34.7 Z","c":[157.0,16.7],"box":[147.6,-1.4,18.8,36.4],"geo":[37.9683491,-122.0692112],"grid":"C5","area":667},{"id":"fh","code":"FH","name":"Field House","tourney":false,"alias":["field house"],"d":"M227.3,42.6 L146.4,44.5 L146.2,65.2 L227,63.9 Z","c":[186.9,54.1],"box":[146.2,42.6,81.2,22.6],"geo":[37.968013,-122.0688704],"grid":"D5","area":1698},{"id":"kin","code":"KIN","name":"Kinesiology","tourney":false,"alias":["kinesiology"],"d":"M246.3,-64.7 L238,-64.7 L238,-45.6 L267.1,-45.8 L267,-57.2 L249.8,-57 L249.7,-64.7 Z","c":[250.7,-53.4],"box":[238.0,-64.7,29.1,19.2],"geo":[37.9689809,-122.0681435],"grid":"C5","area":422},{"id":"hrt","code":"HRT","name":"Horticulture","tourney":false,"alias":["horticulture"],"d":"M249.7,-130.8 L273.9,-130.8 L273.9,-115.6 L259.2,-115.6 L259.3,-57.1 L249.8,-57 Z M288.5,-137 L288.8,-120.5 L301,-120.8 L300.6,-137.2 Z","c":[264.0,-105.9],"box":[249.7,-137.2,51.3,80.2],"geo":[37.9694544,-122.0679916],"grid":"B5","area":1125},{"id":"mo","code":"MO","name":"Maintenance & Operations","tourney":false,"alias":[],"d":"M271.6,-192.5 L272.9,-156.6 L264,-156.4 L264.2,-146.7 L322.7,-148.1 L321.6,-194.1 Z","c":[296.3,-169.7],"box":[264.0,-194.1,58.7,47.4],"geo":[37.9700292,-122.0676238],"grid":"B6","area":2366},{"id":"m","code":"M","name":"Music","tourney":false,"alias":["music"],"d":"M90.8,70.8 L95.3,73.3 L102.6,74.9 L110,73.9 L116.7,70.6 L121.8,65.2 L124.8,58.3 L125.4,50.9 L123.4,43.7 L119.1,37.6 L113,33.3 L105.8,31.3 L98.3,31.9 L91.5,34.8 L86.1,40 L82.7,46.6 L81.7,54 L84.8,64.2 Z","c":[103.6,53.1],"box":[81.7,31.3,43.7,43.6],"geo":[37.9680218,-122.06982],"grid":"D4","area":1476},{"id":"fo","code":"FO","name":"Faculty Offices","tourney":false,"alias":["faculty offices"],"d":"M-121.2,1.9 L-121.9,-15.4 L-124.3,-15.3 L-124.6,-26.2 L-123,-26.2 L-123.4,-43 L-125.3,-42.9 L-125.6,-55 L-122.7,-55 L-123.3,-72.2 L-142.6,-71.5 L-142,-56 L-145.1,-55.9 L-144.6,-40 L-148.9,-39.9 L-148.5,-24.4 L-140.8,-24.6 L-140.9,-16.7 L-138.3,-16.4 L-137.9,2.5 Z","c":[-133.4,-36.0],"box":[-148.9,-72.2,27.7,74.7],"geo":[37.9688242,-122.0725205],"grid":"C2","area":1458},{"id":"ab","code":"AB","name":"Administration","tourney":false,"alias":["administration","admin"],"d":"M-165.3,-42.8 L-165.1,-36.5 L-163.6,-36.5 L-163,-17.6 L-160.6,-17.6 L-160.4,-12.3 L-171.7,-12 L-171.6,-8.8 L-163.4,-9.1 L-162.8,10.2 L-169.5,10.4 L-169.3,17.9 L-163.6,17.8 L-163.3,25.6 L-166.7,25.7 L-166.6,31.1 L-176.9,31.4 L-177.1,25.6 L-179.8,25.7 L-180.1,15.6 L-184.6,15.8 L-184.4,20.5 L-189.7,20.6 L-190.1,7.1 L-192.1,7.1 L-192.4,-3.3 L-195.6,-3.2 L-196.1,-20.3 L-181.2,-20.8 L-181.8,-40.3 L-174.6,-40.5 L-174.7,-43.9 L-172.1,-44 L-172.1,-42.6 Z","c":[-176.6,-6.2],"box":[-196.1,-44.0,35.7,75.4],"geo":[37.968556,-122.0730128],"grid":"C2","area":1664},{"id":"lc","code":"LC","name":"Learning Center","tourney":false,"alias":["learning center"],"d":"M-123.1,9.8 L-122.9,37.5 L-143.1,37.6 L-143.1,40.3 L-147.8,40.4 L-147.8,34.7 L-153.3,34.7 L-153.4,27.7 L-156.8,27.7 L-156.8,23.2 L-152,23.2 L-152.1,20.5 L-149.6,20.5 L-149.7,10.1 Z","c":[-137.7,24.2],"box":[-156.8,9.8,33.9,30.5],"geo":[37.9682817,-122.0725687],"grid":"C2","area":807},{"id":"lca","code":"LCA","name":"Learning Center Annex","tourney":false,"alias":["annex"],"d":"M-111,36.2 L-94.1,35.9 L-94.7,16.9 L-79,16.4 L-79,13.6 L-72.2,13.4 L-72.4,5.4 L-78.5,5.5 L-78.6,0.3 L-92.1,0.6 L-91.9,9 L-102.4,9.2 L-102.5,1.3 L-112.9,1.6 L-112.6,14.8 L-106.1,14.7 L-105.9,23.5 L-111.3,23.6 Z","c":[-96.2,16.0],"box":[-112.9,0.3,40.7,35.9],"geo":[37.9683562,-122.0720964],"grid":"C2","area":780},{"id":"l","code":"L","name":"Library","tourney":false,"alias":["library"],"d":"M-156,64.3 L-126.8,63.5 L-126.8,66.4 L-105.4,66 L-105.5,68.9 L-96.4,68.8 L-95.8,90.1 L-99.1,90.5 L-98.8,98.2 L-104.8,98.8 L-104.5,111.8 L-88.5,111.3 L-88.4,132.7 L-110.7,133.2 L-110.9,121.9 L-122.9,121.8 L-131.3,122.2 L-131,133.2 L-153.2,133.8 L-153.7,118.1 L-154.9,118 L-153.8,111.2 L-155,111.2 L-155.1,109.6 L-155.1,107.9 L-153.8,107.9 L-154.2,91.8 L-156.2,92 Z","c":[-125.7,98.1],"box":[-156.2,63.5,67.9,70.3],"geo":[37.9676159,-122.072432],"grid":"D2","area":3779},{"id":"wlc","code":"WLC","name":"West Library Classrooms","tourney":false,"alias":[],"d":"M-164.3,119.3 L-156.8,119.1 L-157.5,91 L-165,91.2 Z","c":[-160.9,105.2],"box":[-165.0,91.0,8.3,28.2],"geo":[37.9675525,-122.0728334],"grid":"D2","area":213},{"id":"ps","code":"PS","name":"Physical Sciences","tourney":false,"alias":["physical science","physical sciences"],"d":"M-200.3,65.8 L-198.3,141.7 L-224.2,142.3 L-223.9,154.7 L-215.2,154.5 L-215,162.3 L-173.1,161.3 L-173.4,148 L-175.3,143.7 L-178.5,143.6 L-178.4,139.5 L-177.1,138.3 L-178.7,70.9 L-183.1,71 L-183.3,65.4 Z","c":[-192.0,121.5],"box":[-224.2,65.4,51.1,96.9],"geo":[37.9674051,-122.0731882],"grid":"D2","area":2546},{"id":"pl","code":"PL","name":"Planetarium","tourney":false,"alias":["planetarium"],"d":"M-224.2,59.1 L-223.3,90 L-204.9,89.5 L-205.8,58.6 Z","c":[-214.5,74.3],"box":[-224.2,58.6,19.2,31.3],"geo":[37.9678308,-122.0734445],"grid":"D1","area":568},{"id":"ls","code":"LS","name":"Life Sciences","tourney":false,"alias":["life sciences","life science"],"d":"M-264.4,91.2 L-237.3,90.6 L-235.8,155 L-238.4,155 L-238.3,161.9 L-254.2,162.3 L-254.3,155.6 L-262.9,155.8 Z","c":[-249.9,125.2],"box":[-264.4,90.6,28.5,71.7],"geo":[37.9673717,-122.0738476],"grid":"D1","area":1855},{"id":"st","code":"ST","name":"Science & Technology Center","tourney":false,"alias":["science and technology","science & technology"],"d":"M-267,-10.4 L-264.9,59.9 L-237.2,59.1 L-239.4,-11.3 Z","c":[-252.1,24.3],"box":[-267.0,-11.3,29.8,71.2],"geo":[37.968281,-122.0738729],"grid":"C1","area":1946},{"id":"sc","code":"SC","name":"Science Center","tourney":false,"alias":["science center"],"d":"M-296.1,96 L-301.2,106.5 L-313.9,100.3 L-308.8,89.8 Z M-310.2,73.7 L-309.8,83 L-317.2,83.2 L-319.5,80.5 L-321.4,80.6 L-321.6,76.7 L-319.2,76.6 L-316.5,73.9 Z M-306.6,51.5 L-306,63.6 L-294.7,62.8 L-295.2,54.4 L-297.6,51.4 Z M-282.7,70.8 L-282.7,72 L-284.6,72 L-284.6,75.1 L-282.5,75 L-282.4,81.8 L-266.7,81.7 L-266.8,70.6 Z M-298.5,74.6 L-296.8,73.3 L-293.6,73.9 L-292.4,75.8 L-292.6,78 L-294.1,79.6 L-297.4,79.5 L-298.9,77.8 Z","c":[-296.0,78.6],"box":[-321.6,51.4,54.9,55.1],"geo":[37.9677922,-122.0743729],"grid":"D1","area":599},{"id":"pol","code":"POL","name":"Campus Police","tourney":false,"alias":["police"],"d":"M30.2,107.8 L44.9,107.4 L45.5,129.1 L30.8,129.5 Z","c":[37.9,118.4],"box":[30.2,107.4,15.4,22.1],"geo":[37.9674329,-122.0705687],"grid":"D4","area":320}],"gridCols":[["1",-256.0],["2",-138.8],["3",-27.1],["4",83.8],["5",207.4],["6",327.8]],"gridRows":[["A",-276.3],["B",-135.6],["C",-23.4],["D",125.2],["E",239.0]],"geo":{"lat0":37.9685,"lon0":-122.071,"kx":87759.023,"ky":110995.854}};
+
+// ==================== shared helpers ====================
+const svg = document.getElementById('map');
+const wrap = document.getElementById('mapwrap');
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  if(attrs) for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function pts(a){ return a.map(p => p.join(',')).join(' '); }
+function txt(parent, x, y, cls, s, extra){
+  const t = el('text', Object.assign({x, y, class:cls}, extra || {}), parent); t.textContent = s; return t;
+}
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function store(key, val){ try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+function recall(key, fallback){ try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch(e){ return fallback; } }
+
+// ==================== campus: University of the Pacific ====================
+const PACIFIC = (function(){
+  const VB = {x:200, y:236, w:595, h:554};
+  const MAP = {x:215, y:250, w:580, h:540};
+  const ZONES = [
+    {id:'river',  name:'DUC',              where:'North end of campus, on the bank of the Calaveras River'},
+    {id:'stagg',  name:'Gym & Stagg Way',  where:'West side of Stagg Way, from the gym down to Bio Sci'},
+    {id:'lawn',   name:'Anderson Lawn',    where:'East side of Stagg Way, just north of Dave Brubeck Way'},
+    {id:'burns',  name:'Burns Tower',      where:'East campus, right by the tower'},
+    {id:'south',  name:'South campus',     where:'South end, near Mendocino Ave'}
+  ];
+  const BUILDINGS = [
+    {id:'duc', geo:[37.9814083,-121.3123093], name:'DeRosa University Center', short:'DUC', zone:'river', grid:'D6', alias:['duc','derosa'],
+     poly:[[407.6,330.9],[482.8,303.5],[496.4,341.1],[421.2,368.5]], c:[452,336], inside:{size:20, rot:-20}, badge:[482,304]},
+    {id:'gym', geo:[37.9797729,-121.3124388], name:'Main Gymnasium', short:'Gym', zone:'stagg', grid:'F5', alias:['gym','main gym'], rect:[388,447,42,31], inside:{size:17}},
+    {id:'wpc', geo:[37.9789766,-121.3118896], name:'Wendell Phillips Center', short:'WPC', zone:'stagg', grid:'G5–6', alias:['wpc','wendell'], rect:[390,498,42,47], inside:{size:16}},
+    {id:'raymond', geo:[37.9790972,-121.3132192], name:'Raymond Great Hall', short:'Raymond', zone:'stagg', grid:'G4', alias:['raymond'], rect:[318,474,34,18], tag:[262,470]},
+    {id:'benerd', geo:[37.9782185,-121.3114851], name:'Benerd School of Education', short:'Benerd', zone:'stagg', grid:'H6', alias:['benerd','education'], rect:[410,562,45,34], tag:[367,579]},
+    {id:'bio', geo:[37.9775038,-121.311188], name:'Biological Sciences Center', short:'Bio Sci', zone:'stagg', grid:'I6', alias:['bio','biological'], rect:[420,605,36,60], tag:[372,650]},
+    {id:'anderson', geo:[37.980272,-121.3108188], name:'Anderson Hall', short:'Anderson', zone:'lawn', grid:'F7', alias:['anderson'], rect:[502,447,28,20], tag:[506,425]},
+    {id:'khoury', geo:[37.9796337,-121.3110728], name:'Khoury Hall', short:'Khoury', zone:'lawn', grid:'G7', alias:['khoury'], rect:[472,472,23,18], tag:[554,482]},
+    {id:'chambers', geo:[37.9792499,-121.3112102], name:'John T. Chambers Technology Center', short:'Chambers', zone:'lawn', grid:'G6–7', alias:['chambers','jtc'], rect:[450,507,45,35], tag:[516,577]},
+    {id:'weber', geo:[37.981056,-121.3091882], name:'Weber Hall', short:'Weber', zone:'burns', grid:'F9', alias:['weber'], rect:[602,420,34,18], tag:[673,430]},
+    {id:'buck', geo:[37.9801296,-121.3086155], name:'Buck Hall', short:'Buck', zone:'burns', grid:'G9', alias:['buck'], rect:[630,498,30,18], tag:[645,530]},
+    {id:'classroom', geo:[37.9763069,-121.310746], name:'Classroom Building', short:'Classroom', zone:'south', grid:'J–K6', alias:['classroom'], rect:[417,730,35,22], tag:[512,748]},
+    {id:'psych', geo:[37.9763031,-121.3131639], name:'Psychology/Communications', short:'Psych/Comm', zone:'south', grid:'J4', alias:['psych','communications','psychology'], rect:[262,680,50,22], tag:[312,718]}
+  ];
+  BUILDINGS.forEach(b => {
+    if(b.rect){ const [x,y,w,h] = b.rect; if(!b.c) b.c = [x+w/2, y+h/2]; b.box = b.rect; }
+    else if(b.poly){ const xs = b.poly.map(p=>p[0]), ys = b.poly.map(p=>p[1]); b.box = [Math.min(...xs), Math.min(...ys), Math.max(...xs)-Math.min(...xs), Math.max(...ys)-Math.min(...ys)]; }
+  });
+  const LANDMARKS = [
+    [392,365,36,35],[392,408,36,34],[522,372,20,25],[560,367,75,30],[557,435,23,25],[650,377,40,13],
+    [552,502,48,30],[502,500,28,15],
+    [296,425,22,18],[325,425,25,14],[355,425,25,18],[355,470,25,25],[296,505,22,15],[325,505,25,15],
+    [355,505,25,15],[296,527,22,18],[325,530,25,15],[355,527,25,18],
+    [305,602,32,28],[340,604,30,20],[325,740,40,30],[368,745,33,25],[232,682,26,18],[328,680,30,22]
+  ];
+  const LOTS = [
+    {poly:[[300,386],[340,371],[384,353],[384,408],[300,408]], label:'Lot 6', at:[336,394]},
+    {poly:[[512,299],[660,242],[664,298]], label:'Lot 7', at:[622,282]},
+    {rect:[298,560,84,36], label:'Lot 4', at:[314,578]},
+    {rect:[200,560,82,28], label:'Lot 2', at:[248,574]},
+    {rect:[200,712,50,63], label:'Lot 3', at:[230,745]},
+    {rect:[292,600,13,74]},
+    {rect:[709,503,33,37], label:'Lot 23', at:[725,522]},
+    {rect:[302,282,38,20], label:'Lot 13', at:[321,292]}
+  ];
+  const ROADS = [
+    {d:'M668,236 L832,790', w:14}, {d:'M200,552 L795,552', w:10}, {d:'M462,670 L795,670', w:10},
+    {d:'M462,727 L795,727', w:9}, {d:'M200,780 L458,780', w:10}, {d:'M200,595 L292,595', w:8},
+    {d:'M462,552 L462,727', w:7}, {d:'M442,362 L442,552', w:8}, {d:'M292,418 L292,600', w:6},
+    {d:'M548,345 L548,552', w:6}, {d:'M548,412 L682,412', w:6},
+    {d:'M497,318 C520,342 545,347 575,348 L640,351 L705,368', w:7}, {d:'M709,497 L795,497', w:6}
+  ];
+  const STREET_LABELS = [
+    {t:'Pacific Ave', x:711, y:383, rot:73.5}, {t:'Dave Brubeck Way', x:612, y:552}, {t:'Alpine Ave', x:640, y:670},
+    {t:'Sonoma Ave', x:545, y:727}, {t:'Mendocino Ave', x:300, y:780}, {t:'Stagg Way', x:442, y:404, rot:90}, {t:'Larry Heller', x:252, y:595}
+  ];
+  // Map units were fitted to OpenStreetMap positions of 23 campus buildings (affine fit, then a
+  // local nudge so you land on the drawn building when you're standing at the real one).
+  const GEO = {lat0:37.979, lon0:-121.311, kx:87746.4707, ky:110540,
+    cx:[0.6772955, 0.1993109, 475.0215], cy:[0.2353116, -0.6586665, 539.3202]};
+  const CTRL = [
+    [37.9814083,-121.3123093,452,336],[37.9797729,-121.3124388,409,462.5],[37.9789766,-121.3118896,411,521.5],
+    [37.9790972,-121.3132192,335,483],[37.9782185,-121.3114851,432.5,579],[37.9775038,-121.311188,438,635],
+    [37.980272,-121.3108188,516,457],[37.9796337,-121.3110728,483.5,481],[37.9792499,-121.3112102,472.5,524.5],
+    [37.981056,-121.3091882,619,429],[37.9801296,-121.3086155,645,507],[37.9763069,-121.310746,434.5,741],
+    [37.9808085,-121.3086171,661,461],[37.9797698,-121.3093319,576,517],[37.9814641,-121.3100632,597.5,382],
+    [37.9773543,-121.3130535,321,616],[37.9804856,-121.3098556,568.5,447.5],[37.9757969,-121.3119463,345,755],
+    [37.9799343,-121.3082406,659,536],[37.9805974,-121.3111373,494.5,415],[37.9806199,-121.3127447,410,382.5],
+    [37.9817187,-121.3088784,670,383.5],[37.9766716,-121.315117,182,632]
+  ];
+  function en(lat, lon){ return [(lon - GEO.lon0)*GEO.kx, (lat - GEO.lat0)*GEO.ky]; }
+  function aff(e, n){ return [GEO.cx[0]*e + GEO.cx[1]*n + GEO.cx[2], GEO.cy[0]*e + GEO.cy[1]*n + GEO.cy[2]]; }
+  const CTRL_EN = CTRL.map(([la, lo, mx, my]) => { const [e, n] = en(la, lo); const [px, py] = aff(e, n); return {e, n, dx:mx-px, dy:my-py}; });
+  function toMap(lat, lon){
+    const [e, n] = en(lat, lon);
+    const [x, y] = aff(e, n);
+    let sw = 0, sx = 0, sy = 0, dmin = Infinity;
+    CTRL_EN.forEach(c => { const d2 = (c.e-e)**2 + (c.n-n)**2; if(d2 < dmin) dmin = d2; const w = 1/(d2 + 25); sw += w; sx += w*c.dx; sy += w*c.dy; });
+    const fade = Math.max(0, Math.min(1, (200 - Math.sqrt(dmin)) / 140));
+    return [x + fade*sx/sw, y + fade*sy/sw];
+  }
+  function headingAngle(h){
+    const r = h*Math.PI/180, s = Math.sin(r), c = Math.cos(r);
+    const vx = GEO.cx[0]*s + GEO.cx[1]*c, vy = GEO.cy[0]*s + GEO.cy[1]*c;
+    return Math.atan2(vx, -vy)*180/Math.PI;
+  }
+  function drawBase(g){
+    const OFF = [ [[466,557],[800,557],[800,790],[466,790]], [[668,236],[800,236],[800,683]] ];
+    OFF.forEach(p => { el('polygon', {points:pts(p), class:'off'}, g); el('polygon', {points:pts(p), fill:'url(#hatch)'}, g); });
+    el('path', {d:'M200,393 L215,388 L330,348 L400,313 L475,286 L560,253 L670,212 L800,165', class:'river'}, g);
+    el('path', {d:'M200,372 L330,328 L400,293 L475,266 L560,233 L670,192 L800,146', class:'bike'}, g);
+    LOTS.forEach(l => {
+      if(l.poly) el('polygon', {points:pts(l.poly), class:'lot'}, g);
+      else el('rect', {x:l.rect[0], y:l.rect[1], width:l.rect[2], height:l.rect[3], class:'lot'}, g);
+    });
+    ROADS.forEach(r => el('path', {d:r.d, class:'road-edge', 'stroke-width':r.w+2.5}, g));
+    ROADS.forEach(r => el('path', {d:r.d, class:'road', 'stroke-width':r.w}, g));
+    LANDMARKS.forEach(([x,y,w,h]) => el('rect', {x, y, width:w, height:h, rx:1.5, class:'lm'}, g));
+    el('rect', {x:652, y:452, width:18, height:18, class:'tower'}, g);
+    el('circle', {cx:378, cy:601, r:4.5, class:'tower'}, g);
+    LOTS.forEach(l => { if(l.label) txt(g, l.at[0], l.at[1], 'lotlab', l.label); });
+    STREET_LABELS.forEach(s => txt(g, s.x, s.y, 'streetlab', s.t, s.rot ? {transform:`rotate(${s.rot} ${s.x} ${s.y})`} : null));
+    txt(g, 292, 361, 'riverlab', 'Calaveras River', {transform:'rotate(-19.2 292 361)'});
+    txt(g, 646, 461, 'lmlab', 'Burns Tower', {'text-anchor':'end'});
+    txt(g, 576, 517, 'lmlab', 'Library', {'text-anchor':'middle'});
+    txt(g, 632, 702, 'offlab', 'Off campus');
+  }
+  return {
+    id:'pacific', tab:'Pacific', tabSub:'Stockton',
+    intro:'University of the Pacific, Stockton. Orange buildings host rounds. Tap one to find it, and log your rooms below as postings go up.',
+    aria:'Simplified map of the University of the Pacific campus with competition buildings in orange',
+    VB, MAP, zones:ZONES, buildings:BUILDINGS, drawBase, toMap, headingAngle, unitsPerM:0.702,
+    compass:{x:760, y:292, rot:17},
+    gridCols:{3:248,4:314,5:379,6:444,7:511,8:577,9:642,10:709,11:783}, gridRows:{D:305,E:373,F:437,G:503,H:570,I:633,J:703,K:768},
+    legend:[['o','Competition building'],['b','Other building'],['p','Parking'],['r','Calaveras River']],
+    roundsKey:'pacific-tourney-rounds-v1', tagSize:18,
+    credit:'Pacific is simplified from the official University of the Pacific campus map. Shapes and distances are approximate, so trust the signs on the doors.'
+  };
+})();
+
+// ==================== campus: Diablo Valley College ====================
+const DVC = (function(){
+  const D = DVC_DATA;
+  const MAP = {x:-340, y:-345, w:595, h:645};
+  const VB = {x:MAP.x-16, y:MAP.y-15, w:MAP.w+16, h:MAP.h+15};
+  const ZONES = [
+    {id:'tourney', name:'Tournament buildings', where:'Rounds, tab and warm-up rooms were here at the Bernacchi'},
+    {id:'other', name:'Everything else', where:'Every other building, by its posted code', quiet:true, collapse:true}
+  ];
+  const NOTES = {
+    h:'At last year’s Bernacchi this was the hub: tab room H106, judges’ room H109, extemp prep H110. Friday’s 2026 LD rounds are in here too.',
+    bwl:'Friday’s 2026 LD rounds use BWL rooms. Last year it held most school warm-up rooms (Butte had BWL213 Saturday, BWL104 Sunday).',
+    la:'Last year: parli prep rooms and the IPDA strike rooms (LA-107, LA-112).',
+    ma:'Last year: overflow warm-up rooms (Math 101, 103, 104). Postings may say “Math”.'
+  };
+  const LABEL_AT = { ps:[-198,96,-90], sc:[-292,72], hrt:[262,-112], ett:[-14,-150], ab:[-178,-14,-90], fo:[-136,-40,-90], l:[-128,96], hfo:[157,17,-90], pac:[78,-104], ls:[-250,125,-90], st:[-252,24,-90], aq:[219,-24,-90], bwl:[-135,-116,-90], h:[-87,-108,-90], ma:[-11,45,58,12] };
+  const TAGS = { h:{text:'Humanities', at:[-72,-176]}, ma:{text:'Math', at:[42,40]} };
+  const BUILDINGS = D.buildings.map(b => Object.assign({}, b, {
+    short:b.code, zone:b.tourney ? 'tourney' : 'other', plain:!b.tourney,
+    name:`${b.name} (${b.code})`, codeLabel:true, labelAt:LABEL_AT[b.id], note:NOTES[b.id],
+    tag:TAGS[b.id] ? TAGS[b.id].at : null, tagText:TAGS[b.id] ? TAGS[b.id].text : null,
+    alias:[b.code.toLowerCase()].concat(b.alias)
+  }));
+  const WHERE = {
+    h:'North-west of the Commons, right below Lot 7', bwl:'North-west of the Commons, right below Lot 7, next to Humanities',
+    la:'West of the Commons, across the walkway from SSC', ma:'South of the Commons, between the Book Center and the lake'
+  };
+  BUILDINGS.forEach(b => { b.where = WHERE[b.id] || ''; });
+  function toMap(lat, lon){ return [(lon - D.geo.lon0)*D.geo.kx, -(lat - D.geo.lat0)*D.geo.ky]; }
+  function headingAngle(h){ return h; }
+  function drawBase(g){
+    el('rect', {x:MAP.x, y:MAP.y, width:MAP.w, height:MAP.h, class:'off'}, g);
+    el('rect', {x:MAP.x, y:MAP.y, width:MAP.w, height:MAP.h, fill:'url(#hatch)'}, g);
+    el('path', {d:D.campus, class:'ground'}, g);
+    D.fields.forEach(d => el('path', {d, class:'field'}, g));
+    D.tracks.forEach(d => el('path', {d, class:'track'}, g));
+    D.water.forEach(d => el('path', {d, class:'water'}, g));
+    D.canal.forEach(d => el('path', {d, class:'canal'}, g));
+    el('path', {d:D.pool, class:'water'}, g);
+    D.lots.forEach(l => el('path', {d:l.d, class:'lot'}, g));
+    D.commons.forEach(d => el('path', {d, class:'plaza'}, g));
+    D.walks.forEach(d => el('path', {d, class:'walkway'}, g));
+    D.roads.forEach(r => el('path', {d:r.d, class:'road-edge', 'stroke-width':r.w+2.5}, g));
+    D.roads.forEach(r => el('path', {d:r.d, class:'road', 'stroke-width':r.w}, g));
+    D.others.forEach(d => el('path', {d, class:'lm'}, g));
+    el('path', {d:D.construction, class:'cz'}, g);
+    txt(g, D.constructionAt[0], D.constructionAt[1], 'czlab', 'CONSTRUCTION');
+    const LOT_AT = {'Lot 7':[-130,-240], 'Lot 9':[205,-235], 'Lot 10':null, 'Lot 10A':null};
+    D.lots.forEach(l => { if(!l.label || !l.at) return; const at = l.label in LOT_AT ? LOT_AT[l.label] : l.at; if(at) txt(g, at[0], at[1], 'lotlab', l.label); });
+    txt(g, -55, -326, 'streetlab', 'Golf Club Rd');
+    txt(g, -150, 293, 'streetlab', 'Viking Dr');
+    txt(g, -331, 228, 'streetlab', 'Stubbs Rd', {transform:'rotate(-88 -331 228)'});
+    txt(g, 91, 10, 'riverlab', 'Lake');
+    txt(g, 24, -60, 'lmlab', 'Commons', {'text-anchor':'middle', 'font-style':'italic'});
+    txt(g, -111, 58, 'lmlab', 'Library Quad', {'text-anchor':'middle', 'font-style':'italic', 'font-size':'10px'});
+    txt(g, 165, 196, 'lmlab', 'Viking Field', {'text-anchor':'middle', 'font-style':'italic'});
+  }
+  const cols = {}; D.gridCols.forEach(([k, x]) => { if(x > MAP.x + 8 && x < MAP.x + MAP.w - 8) cols[k] = x; });
+  const rows = {}; D.gridRows.forEach(([k, y]) => { if(y > MAP.y + 8 && y < MAP.y + MAP.h - 8) rows[k] = y; });
+  return {
+    id:'dvc', tab:'Diablo Valley', tabSub:'Pleasant Hill',
+    intro:'Diablo Valley College, Pleasant Hill, for the Bernacchi (Nov 20–22). Orange buildings are where the tournament ran last year and where Friday’s rounds are posted. Every building is tappable, so whatever code a posting uses, you can find it.',
+    aria:'Map of the Diablo Valley College Pleasant Hill campus with tournament buildings in orange',
+    VB, MAP, zones:ZONES, buildings:BUILDINGS, drawBase, toMap, headingAngle, unitsPerM:1,
+    compass:{x:MAP.x+MAP.w-24, y:MAP.y+36, rot:0},
+    gridCols:cols, gridRows:rows,
+    legend:[['o','Tournament building, or one you’ve logged a round in'],['b','Other building'],['p','Parking'],['c','Construction zone']],
+    roundsKey:'dvc-tourney-rounds-v1', tagSize:15,
+    know:true,
+    credit:'Diablo Valley is drawn from OpenStreetMap building outlines (© OpenStreetMap contributors), checked against DVC’s 2025 campus map. Building codes match DVC’s signs.'
+  };
+})();
+
+const CAMPUSES = [DVC, PACIFIC];
+const byCampus = Object.fromEntries(CAMPUSES.map(c => [c.id, c]));
+
+// ==================== state ====================
+let C = null;           // current campus
+let byId = {};
+let nodes = {};
+let rounds = [];
+let selected = null;
+let focusRoom = null;   // room text from a shared link
+let zi = 0;
+let layers = {};
+const ZOOMS = [1, 1.6, 2.4, 3.2];
+
+function uid(){ return Math.random().toString(36).slice(2, 9); }
+function blank(){ return {id:uid(), round:'', event:'', building:'', room:''}; }
+function loadRounds(){ const r = recall(C.roundsKey, []); rounds = Array.isArray(r) && r.length ? r : [blank()]; }
+function saveRounds(){ store(C.roundsKey, rounds); }
+function roundsAt(id){ return rounds.filter(r => r.building === id); }
+
+// ==================== drawing ====================
+function drawCampus(){
+  const {VB, MAP} = C;
+  svg.textContent = '';
+  svg.setAttribute('viewBox', `${VB.x} ${VB.y} ${VB.w} ${VB.h}`);
+  svg.setAttribute('aria-label', C.aria);
+  document.documentElement.style.setProperty('--ar', (VB.w / VB.h).toFixed(4));
+  const defs = el('defs', null, svg);
+  const clip = el('clipPath', {id:'mapclip'}, defs);
+  el('rect', {x:MAP.x, y:MAP.y, width:MAP.w, height:MAP.h}, clip);
+  const pat = el('pattern', {id:'hatch', width:8, height:8, patternUnits:'userSpaceOnUse', patternTransform:'rotate(45)'}, defs);
+  el('line', {x1:0, y1:0, x2:0, y2:8, class:'hatchline'}, pat);
+  const pato = el('pattern', {id:'hatcho', width:7, height:7, patternUnits:'userSpaceOnUse', patternTransform:'rotate(45)'}, defs);
+  el('line', {x1:0, y1:0, x2:0, y2:7, class:'hatchline o'}, pato);
+
+  el('rect', {x:VB.x, y:VB.y, width:VB.w, height:VB.h, class:'frame'}, svg);
+  const g = el('g', {'clip-path':'url(#mapclip)'}, svg);
+  el('rect', {x:MAP.x, y:MAP.y, width:MAP.w, height:MAP.h, class:'ground'}, g);
+  C.drawBase(g);
+
+  layers.leaders = el('g', null, g);
+  layers.bldg = el('g', null, g);
+  layers.tags = el('g', null, g);
+  layers.badges = el('g', null, g);
+  layers.me = el('g', {visibility:'hidden'}, g);
+  layers.ring = el('g', null, g);
+  nodes = {};
+
+  // plain buildings first, so tournament ones sit on top
+  const order = C.buildings.slice().sort((a, b) => (a.plain ? 0 : 1) - (b.plain ? 0 : 1));
+  order.forEach(b => {
+    const grp = el('g', {class:'tb' + (b.plain ? ' plain' : ''), 'data-id':b.id, tabindex:'0', role:'button', 'aria-label':b.name}, layers.bldg);
+    if(b.d) el('path', {d:b.d, class:'shape'}, grp);
+    else if(b.poly) el('polygon', {points:pts(b.poly), class:'shape'}, grp);
+    else el('rect', {x:b.rect[0], y:b.rect[1], width:b.rect[2], height:b.rect[3], rx:2, class:'shape'}, grp);
+    if(b.inside){
+      const t = txt(grp, b.c[0], b.c[1], '', b.short, {style:`font-size:${b.inside.size}px`});
+      if(b.inside.rot) t.setAttribute('transform', `rotate(${b.inside.rot} ${b.c[0]} ${b.c[1]})`);
+    }
+    if(b.codeLabel) placeCode(grp, b);
+    nodes[b.id] = {grp};
+    if(b.tag){
+      const leader = el('line', {class:'leader'}, layers.leaders);
+      const tg = el('g', {class:'tag', 'data-id':b.id, 'aria-hidden':'true'}, layers.tags);
+      const r = el('rect', {rx:5}, tg);
+      const t = txt(tg, b.tag[0], b.tag[1], '', b.tagText || b.short, {style:`font-size:${C.tagSize}px`});
+      Object.assign(nodes[b.id], {tag:tg, tagRect:r, tagText:t, leader});
+    }
+  });
+
+  // me
+  layers.meAcc = el('circle', {class:'me-acc', r:10}, layers.me);
+  layers.meCone = el('path', {class:'me-cone', d:'M0,0 L-13,-34 A36,36 0 0 1 13,-34 Z', visibility:'hidden'}, layers.me);
+  el('circle', {class:'me-dot', r:7}, layers.me);
+
+  // grid, edge, compass
+  for(const k in C.gridCols) txt(svg, C.gridCols[k], VB.y + 7, 'gridlab', k);
+  for(const k in C.gridRows) txt(svg, VB.x + 7.5, C.gridRows[k], 'gridlab', k);
+  el('rect', {x:MAP.x, y:MAP.y, width:MAP.w, height:MAP.h, class:'mapedge'}, svg);
+  const cp = el('g', {class:'compass', transform:`translate(${C.compass.x} ${C.compass.y})`}, svg);
+  const rot = el('g', {transform:`rotate(${C.compass.rot})`}, cp);
+  el('path', {d:'M0,-27 L7,-13 L-7,-13 Z'}, rot);
+  el('circle', {r:13}, cp);
+  txt(cp, 0, 0.5, '', 'N');
+
+  layoutTags();
+  markMine();
+}
+
+function placeCode(grp, b){
+  const s = b.code, k = 0.68;
+  const [, , bw, bh] = b.box;
+  let [x, y, forced, fsMax] = b.labelAt || [b.c[0], b.c[1]];
+  if(forced === 0) forced = null;
+  const base = fsMax || (b.plain ? 11 : 16), min = b.plain ? 7.5 : 11;
+  const span = fs => s.length * k * fs + 2;
+  let fs = base, rot = forced != null ? forced : 0, fits = false;
+  const w = forced != null ? bh : bw, h = forced != null ? bw : bh;
+  const tryFit = (W, H) => { for(let f = base; f >= min; f -= 0.5){ if(span(f) <= W*0.94 && f*0.9 <= H) return f; } return 0; };
+  if(forced != null){ fs = tryFit(w, h) || min; fits = true; }
+  else {
+    let f = tryFit(bw, bh);
+    if(f){ fs = f; fits = true; }
+    else if(bh > bw && (f = tryFit(bh, bw))){ fs = f; rot = -90; fits = true; }
+  }
+  if(!fits){
+    fs = base; rot = 0;
+    x = b.box[0] + b.box[2] + 2; y = b.c[1];
+    const t = txt(grp, x, y, 'out', s, {style:`font-size:${fs}px`, 'text-anchor':'start'});
+    return t;
+  }
+  const t = txt(grp, x, y, '', s, {style:`font-size:${fs}px`});
+  if(rot) t.setAttribute('transform', `rotate(${rot} ${x} ${y})`);
+  return t;
+}
+
+function layoutTags(){
+  C.buildings.forEach(b => {
+    const n = nodes[b.id];
+    if(!n || !n.tag) return;
+    const w = n.tagText.getBBox().width + 16, h = C.tagSize + 8;
+    const x = b.tag[0] - w/2, y = b.tag[1] - h/2;
+    n.tagRect.setAttribute('x', x); n.tagRect.setAttribute('y', y);
+    n.tagRect.setAttribute('width', w); n.tagRect.setAttribute('height', h);
+    n.box = [x, y, w, h];
+    const [bx, by, bw, bh] = b.box;
+    const ax = Math.min(Math.max(b.tag[0], bx), bx+bw), ay = Math.min(Math.max(b.tag[1], by), by+bh);
+    n.leader.setAttribute('x1', ax); n.leader.setAttribute('y1', ay);
+    n.leader.setAttribute('x2', b.tag[0]); n.leader.setAttribute('y2', b.tag[1]);
+  });
+  drawBadges();
+}
+
+function drawBadges(){
+  const bg = layers.badges; bg.textContent = '';
+  C.buildings.forEach(b => {
+    const n = roundsAt(b.id).length;
+    if(!n) return;
+    const nd = nodes[b.id];
+    let x, y;
+    if(nd.box){ x = nd.box[0] + nd.box[2] - 1; y = nd.box[1] + 1; }
+    else if(b.badge){ [x, y] = b.badge; }
+    else { x = b.box[0] + b.box[2]; y = b.box[1]; }
+    const g = el('g', {class:'badge'}, bg);
+    el('circle', {cx:x, cy:y, r:9.5}, g);
+    txt(g, x, y + 0.5, '', n);
+  });
+}
+function markMine(){
+  C.buildings.forEach(b => { const n = nodes[b.id]; if(n) n.grp.classList.toggle('mine', roundsAt(b.id).length > 0); });
+}
+
+// ==================== selection ====================
+function select(id, opts){
+  opts = opts || {};
+  if(id !== selected || !opts.keepRoom) focusRoom = opts.room || null;
+  selected = id;
+  C.buildings.forEach(b => {
+    const n = nodes[b.id], on = b.id === id;
+    n.grp.classList.toggle('sel', on);
+    if(n.tag){ n.tag.classList.toggle('sel', on); n.leader.classList.toggle('sel', on); }
+  });
+  layers.ring.textContent = '';
+  if(id){
+    const b = byId[id];
+    const size = b.box ? Math.max(b.box[2], b.box[3]) : 60;
+    el('circle', {cx:b.c[0], cy:b.c[1], r:size/2 + 12, class:'ring'}, layers.ring);
+    // lift the selected building above its neighbours
+    layers.bldg.appendChild(nodes[id].grp);
+  }
+  renderInfo(); renderIndex();
+  if(id && opts.scroll && window.matchMedia('(max-width: 899px)').matches){
+    document.getElementById('mapcard').scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block:'start'});
+  }
+  if(id && opts.center){ if(zi === 0 && C.id === 'dvc') setZoom(1); centerOn(id); }
+}
+function centerOnPoint(x, y){
+  const {VB} = C;
+  const fx = (x - VB.x) / VB.w, fy = (y - VB.y) / VB.h;
+  wrap.scrollTo({left: fx*svg.clientWidth - wrap.clientWidth/2, top: fy*svg.clientHeight - wrap.clientHeight/2, behavior: reduceMotion ? 'auto' : 'smooth'});
+}
+function centerOn(id){ const b = byId[id]; if(b) centerOnPoint(b.c[0], b.c[1]); }
+svg.addEventListener('click', e => {
+  const hit = e.target.closest('[data-id]');
+  if(hit) select(hit.getAttribute('data-id'));
+});
+svg.addEventListener('keydown', e => {
+  const hit = e.target.closest('.tb');
+  if(hit && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); select(hit.getAttribute('data-id')); }
+});
+
+// ==================== zoom ====================
+function setZoom(next){
+  next = Math.max(0, Math.min(ZOOMS.length-1, next));
+  const cx = (wrap.scrollLeft + wrap.clientWidth/2) / svg.clientWidth;
+  const cy = (wrap.scrollTop + wrap.clientHeight/2) / svg.clientHeight;
+  zi = next;
+  svg.style.setProperty('--z', ZOOMS[zi]);
+  if(selected && zi > 0){ centerOn(selected); }
+  else { wrap.scrollLeft = cx*svg.clientWidth - wrap.clientWidth/2; wrap.scrollTop = cy*svg.clientHeight - wrap.clientHeight/2; }
+  document.getElementById('zin').disabled = zi === ZOOMS.length-1;
+  document.getElementById('zout').disabled = zi === 0;
+}
+document.getElementById('zin').onclick = () => setZoom(zi+1);
+document.getElementById('zout').onclick = () => setZoom(zi-1);
+document.getElementById('zfit').onclick = () => setZoom(0);
+
+// ==================== live location ====================
+function metersBetween(a, b){
+  const kx = Math.cos(a[0]*Math.PI/180)*111320, ky = 110990;
+  return Math.hypot((b[1]-a[1])*kx, (b[0]-a[0])*ky);
+}
+function usDist(m){ const ft = m*3.281; return ft < 1000 ? `${Math.max(50, Math.round(ft/50)*50)} ft` : `${(m/1609).toFixed(1)} mi`; }
+let me = null, heading = null, watchId = null, rafPending = false;
+const locBtn = document.getElementById('locate'), locStatus = document.getElementById('locstatus');
+function status(msg){ locStatus.hidden = !msg; locStatus.textContent = msg || ''; }
+function insideMap(){ const {MAP} = C; return me && me.x >= MAP.x && me.x <= MAP.x + MAP.w && me.y >= MAP.y && me.y <= MAP.y + MAP.h; }
+function drawMe(){
+  rafPending = false;
+  if(!me) return;
+  const [x, y] = C.toMap(me.lat, me.lon);
+  me.x = x; me.y = y;
+  layers.me.setAttribute('visibility', insideMap() ? 'visible' : 'hidden');
+  layers.me.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+  layers.meAcc.setAttribute('r', Math.max(9, Math.min(140, me.acc*C.unitsPerM)).toFixed(1));
+  const h = heading != null ? heading : me.course;
+  if(h != null){ layers.meCone.setAttribute('visibility', 'visible'); layers.meCone.setAttribute('transform', `rotate(${C.headingAngle(h).toFixed(1)})`); }
+  else layers.meCone.setAttribute('visibility', 'hidden');
+}
+function queueDraw(){ if(!rafPending){ rafPending = true; requestAnimationFrame(drawMe); } }
+function locMessage(){
+  if(!me) return;
+  status(insideMap() ? `You’re the blue dot, give or take ${Math.max(10, Math.round(me.acc*3.281/5)*5)} ft. Tap My location again to jump to it.`
+                     : `You’re off the edge of this map. The dot will appear once you’re on the ${C.tab} campus.`);
+}
+function onPos(p){
+  const first = !me;
+  me = {lat:p.coords.latitude, lon:p.coords.longitude, acc:p.coords.accuracy || 30,
+        course: (typeof p.coords.heading === 'number' && !isNaN(p.coords.heading) && (p.coords.speed || 0) > 0.6) ? p.coords.heading : null};
+  drawMe();
+  locMessage();
+  if(first && insideMap()){ if(zi === 0) setZoom(1); centerOnPoint(me.x, me.y); }
+  renderInfo();
+}
+function onErr(err){
+  if(watchId != null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  locBtn.setAttribute('aria-pressed', 'false');
+  let framed = true; try { framed = window.self !== window.top; } catch(e) {}
+  if(err && err.code === 1) status(framed
+    ? 'Location is blocked while this map is open inside Claude, whatever your browser settings say. Tap a building and use Walk there in Apple Maps, or open your GitHub copy of this page.'
+    : 'This page wasn’t allowed to use your location. Allow location for this site, and for your browser in iPhone Settings, then tap My location again.');
+  else status('Couldn’t get a GPS fix yet. Step outside or away from big walls and tap My location again.');
+}
+function onOrient(e){
+  let h = null;
+  if(typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) h = e.webkitCompassHeading;
+  else if(e.absolute && typeof e.alpha === 'number') h = 360 - e.alpha;
+  if(h == null) return;
+  const scr = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
+  heading = (h + scr + 360) % 360;
+  queueDraw();
+}
+function listenCompass(){
+  // iPhone only sends compass readings after this permission prompt, which has to come from a tap
+  try{
+    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      DeviceOrientationEvent.requestPermission().catch(() => {});
+    }
+  }catch(e){}
+  window.addEventListener('deviceorientationabsolute', onOrient);
+  window.addEventListener('deviceorientation', onOrient);
+}
+locBtn.addEventListener('click', () => {
+  if(watchId != null){
+    if(me && insideMap()){ if(zi === 0) setZoom(1); centerOnPoint(me.x, me.y); }
+    return;
+  }
+  if(!('geolocation' in navigator)){ status('This browser can’t share location. Tap a building and use Walk there in Apple Maps instead.'); return; }
+  listenCompass();
+  locBtn.setAttribute('aria-pressed', 'true');
+  status('Finding you…');
+  watchId = navigator.geolocation.watchPosition(onPos, onErr, {enableHighAccuracy:true, maximumAge:3000, timeout:20000});
+});
+
+// ==================== info panel ====================
+function roundLine(r){
+  const li = document.createElement('li');
+  const b = document.createElement('b');
+  b.textContent = [r.round, r.event].filter(Boolean).join(', ') || 'Untitled round';
+  li.append(b, document.createTextNode(r.room ? ` in ${r.room}` : ', room not set yet'));
+  return li;
+}
+function shareURL(part){
+  const base = location.href.split('#')[0];
+  return base + '#' + C.id + (part ? '/' + encodeURIComponent(part) : '');
+}
+function toast(msg){
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), 2200);
+}
+async function shareLink(title, part){
+  const url = shareURL(part);
+  if(navigator.share){
+    try { await navigator.share({title, text:title, url}); return; }
+    catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(`${title} ${url}`); toast('Link copied. Paste it in a text.'); }
+  catch(e){ window.prompt('Copy this link:', url); }
+}
+function renderInfo(){
+  const box = document.getElementById('info');
+  box.textContent = '';
+  if(!selected){
+    const p = document.createElement('p');
+    p.textContent = C.id === 'dvc' ? 'Tap any building, or pick one from the index.' : 'Tap an orange building, or pick one from the index.';
+    box.append(p); return;
+  }
+  const b = byId[selected], z = C.zones.find(z => z.id === b.zone);
+  const h = document.createElement('h3'); h.textContent = b.name;
+  const p = document.createElement('p');
+  const where = C.id === 'dvc' ? b.where : z.where;
+  p.textContent = `${where ? where + '. ' : ''}Official map grid ${b.grid}.`;
+  box.append(h, p);
+  if(focusRoom){ const f = document.createElement('div'); f.className = 'roomflag'; f.textContent = `Room ${focusRoom}`; box.append(f); }
+  if(b.note){ const n = document.createElement('p'); n.className = 'note'; n.textContent = b.note; box.append(n); }
+  if(me){
+    const d = metersBetween([me.lat, me.lon], b.geo);
+    const mins = Math.max(1, Math.round(d / 80));
+    const dp = document.createElement('p'); dp.className = 'dist';
+    dp.textContent = d < 30 ? 'You’re basically there.' : `About a ${mins}-minute walk from you (${usDist(d)}).`;
+    box.append(dp);
+  }
+  const here = roundsAt(b.id);
+  if(here.length){
+    const ul = document.createElement('ul');
+    here.forEach(r => ul.append(roundLine(r)));
+    box.append(ul);
+  }
+  const a = document.createElement('a'); a.className = 'walk';
+  a.href = `https://maps.apple.com/?daddr=${b.geo[0]},${b.geo[1]}&dirflg=w`;
+  a.target = '_blank'; a.rel = 'noopener';
+  a.textContent = 'Walk there in Apple Maps';
+  const sh = document.createElement('button'); sh.className = 'walk'; sh.textContent = focusRoom ? 'Share this room' : 'Share this building';
+  sh.onclick = () => shareLink(focusRoom ? `Room ${focusRoom}` : (b.code ? `${b.name}` : b.name), focusRoom || b.code || b.id);
+  const row = document.createElement('div'); row.className = 'actrow'; row.append(a, sh);
+  box.append(row);
+}
+
+// ==================== index ====================
+function indexButton(b){
+  const btn = document.createElement('button'); btn.className = 'idx';
+  btn.setAttribute('aria-current', b.id === selected ? 'true' : 'false');
+  if(C.id === 'dvc'){ const cd = document.createElement('span'); cd.className = 'code'; cd.textContent = b.code; btn.append(cd); }
+  const nm = document.createElement('span'); nm.className = 'nm';
+  nm.textContent = C.id === 'dvc' ? b.name.replace(/\s*\([^)]*\)$/, '') : b.name;
+  btn.append(nm);
+  const n = roundsAt(b.id).length;
+  if(n){ const ct = document.createElement('span'); ct.className = 'ct'; ct.textContent = n === 1 ? '1 round' : `${n} rounds`; btn.append(ct); }
+  const dots = document.createElement('span'); dots.className = 'dots';
+  const ref = document.createElement('span'); ref.className = 'ref'; ref.textContent = b.grid;
+  btn.append(dots, ref);
+  btn.onclick = () => select(b.id, {scroll:true, center:true});
+  return btn;
+}
+function renderIndex(){
+  const host = document.getElementById('index');
+  const openBefore = host.querySelector('details') ? host.querySelector('details').open : false;
+  host.textContent = '';
+  C.zones.forEach(z => {
+    const sec = document.createElement('div'); sec.className = 'zone' + (z.quiet ? ' quiet' : '');
+    const h = document.createElement('h3'); h.textContent = z.name;
+    const p = document.createElement('p'); p.textContent = z.where;
+    const ul = document.createElement('ul');
+    let list = C.buildings.filter(b => b.zone === z.id);
+    if(C.id === 'dvc') list = list.slice().sort((a, b) => a.code.localeCompare(b.code));
+    list.forEach(b => { const li = document.createElement('li'); li.append(indexButton(b)); ul.append(li); });
+    if(z.collapse){
+      const det = document.createElement('details'); det.className = 'more';
+      det.open = openBefore || list.some(b => b.id === selected || roundsAt(b.id).length);
+      const sum = document.createElement('summary'); sum.textContent = `Show all ${list.length}`;
+      det.append(sum, ul);
+      sec.append(h, p, det);
+    } else sec.append(h, p, ul);
+    host.append(sec);
+  });
+}
+
+// ==================== rounds ====================
+const listEl = document.getElementById('rounds');
+function detectBuilding(text){
+  const s = (text || '').trim().toLowerCase();
+  if(!s) return null;
+  // code at the start: "BWL 103", "H106", "LA-107"
+  const codes = C.buildings.map(b => [b.id, (b.code || b.short).toLowerCase()]).sort((a, b) => b[1].length - a[1].length);
+  for(const [id, code] of codes){
+    if(C.id === 'dvc' && new RegExp('^' + code.replace(/[^a-z0-9]/g, '') + '(?=[\\s\\-#]*\\d|\\s*$|\\s)').test(s)) return id;
+  }
+  // a name or alias anywhere: "Humanities 117", "Classroom Bldg Rm 231"
+  let best = null, bestLen = 0;
+  C.buildings.forEach(b => (b.alias || []).forEach(a => {
+    if(a.length < 3 && C.id === 'dvc') return;
+    const re = new RegExp('(^|[^a-z])' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z]|$)');
+    if(re.test(s) && a.length > bestLen){ best = b.id; bestLen = a.length; }
+  }));
+  return best;
+}
+function field(label, key, r, extra, onChange){
+  const l = document.createElement('label'); l.textContent = label;
+  const i = document.createElement('input');
+  i.value = r[key] || ''; i.autocomplete = 'off';
+  if(extra.placeholder) i.placeholder = extra.placeholder;
+  if(extra.list) i.setAttribute('list', extra.list);
+  i.addEventListener('input', () => { r[key] = i.value; if(onChange) onChange(i.value); changed(); });
+  l.append(i); return l;
+}
+function buildingSelect(r){
+  const s = document.createElement('select');
+  const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Choose…'; s.append(o0);
+  C.zones.forEach(z => {
+    const og = document.createElement('optgroup'); og.label = z.name;
+    let list = C.buildings.filter(b => b.zone === z.id);
+    if(C.id === 'dvc') list = list.slice().sort((a, b) => a.code.localeCompare(b.code));
+    list.forEach(b => {
+      const o = document.createElement('option'); o.value = b.id;
+      o.textContent = C.id === 'dvc' ? `${b.code} · ${b.name.replace(/\s*\([^)]*\)$/, '')}` : b.name;
+      og.append(o);
+    });
+    s.append(og);
+  });
+  s.value = r.building || '';
+  return s;
+}
+function renderRounds(){
+  listEl.textContent = '';
+  rounds.forEach((r, i) => {
+    const card = document.createElement('div');
+    card.className = 'round' + (r.building ? ' set' : '');
+    const show = document.createElement('button'); show.className = 'btn go'; show.textContent = 'Show on map';
+    show.disabled = !r.building;
+    show.onclick = () => select(r.building, {scroll:true, center:true});
+    const rm = document.createElement('button'); rm.className = 'btn quiet'; rm.textContent = 'Remove';
+    rm.onclick = () => {
+      rounds = rounds.filter(x => x !== r);
+      if(!rounds.length) rounds = [blank()];
+      renderRounds(); changed();
+    };
+    const bl = document.createElement('label'); bl.textContent = 'Building';
+    const sel = buildingSelect(r); bl.append(sel);
+    const setBuilding = (id, auto) => {
+      r.building = id || ''; r.autoB = !!auto;
+      sel.value = r.building;
+      card.classList.toggle('set', !!r.building);
+      show.disabled = !r.building;
+    };
+    sel.addEventListener('change', () => {
+      setBuilding(sel.value, false); changed();
+      if(r.building) select(r.building, {center:true});
+    });
+    const roomField = field('Room', 'room', r, {placeholder: C.id === 'dvc' ? 'e.g. BWL 103' : 'e.g. 231'}, v => {
+      if(r.building && !r.autoB) return;
+      const id = detectBuilding(v);
+      if(id && id !== r.building) setBuilding(id, true);
+      else if(!id && r.autoB) setBuilding('', false);
+    });
+    const actions = document.createElement('div'); actions.className = 'actions';
+    const shr = document.createElement('button'); shr.className = 'btn'; shr.textContent = 'Share';
+    shr.onclick = () => {
+      const what = [r.round, r.event].filter(Boolean).join(', ');
+      const where = r.room || (r.building ? byId[r.building].name : '');
+      if(!where){ toast('Add a room first.'); return; }
+      shareLink(what ? `${what}: ${where}` : where, r.room || (byId[r.building].code || r.building));
+    };
+    const left = document.createElement('div'); left.style.display = 'flex'; left.style.gap = '8px'; left.append(show, shr);
+    actions.append(left, rm);
+    card.append(
+      field('Round', 'round', r, {placeholder:`Round ${i+1}`}),
+      field('Event', 'event', r, {placeholder:'DI, Prose…', list:'events'}),
+      roomField, bl, actions
+    );
+    listEl.append(card);
+  });
+}
+function changed(){ saveRounds(); drawBadges(); markMine(); renderInfo(); renderIndex(); }
+document.getElementById('addRound').onclick = () => {
+  rounds.push(blank()); renderRounds(); saveRounds();
+  const inputs = listEl.querySelectorAll('.round:last-child input');
+  if(inputs[0]) inputs[0].focus();
+};
+
+// ==================== good to know ====================
+function renderKnow(){
+  const sec = document.getElementById('know'), host = document.getElementById('knowBody');
+  sec.hidden = !C.know; host.textContent = '';
+  if(!C.know) return;
+  const items = [
+    ['Humanities (H) was tournament HQ last year: tab room H106, judges H109, extemp prep H110.', 'Bernacchi 2025 postings. Rooms can change, so trust this year’s postings.'],
+    ['Friday’s LD rounds this year are posted in Humanities and BWL, so expect speech rounds around there too.', 'Bernacchi 2026 Day 1 postings'],
+    ['Lot 7 is the closest lot to Humanities. The invite says parking passes are available.', 'Bernacchi 2025 page and 2026 invite'],
+    ['Breakfast and lunch are provided both days of the swing.', '2026 invite']
+  ];
+  const ul = document.createElement('ul');
+  items.forEach(([t, s]) => { const li = document.createElement('li'); li.textContent = t; const sp = document.createElement('span'); sp.className = 'src'; sp.textContent = s; li.append(sp); ul.append(li); });
+  const tbl = document.createElement('table'); tbl.className = 'sched';
+  const cap = document.createElement('caption'); cap.textContent = 'IE schedule, Saturday and Sunday'; tbl.append(cap);
+  [['Registration','7:00 AM'],['Pattern A, round 1','8:45 AM'],['Pattern B, round 1','10:00 AM'],['Pattern A, round 2','11:30 AM'],['Lunch','12:30 PM'],['Pattern B, round 2','1:30 PM'],['Pattern A finals','3:30 PM'],['Pattern B finals','4:45 PM'],['Awards','about 6 PM']]
+    .forEach(([a, b]) => { const tr = document.createElement('tr'); const th = document.createElement('th'); th.textContent = a; const td = document.createElement('td'); td.textContent = b; tr.append(th, td); tbl.append(tr); });
+  const pat = document.createElement('p'); pat.className = 'hint'; pat.style.margin = '10px 0 0';
+  pat.textContent = 'Pattern A: Extemp, Informative, ADS, Prose, Poetry. Pattern B: Impromptu, Persuasive, CA, POI, Drama, Duo.';
+  host.append(ul, tbl, pat);
+}
+
+// ==================== campus switching ====================
+const tabsEl = document.getElementById('tabs');
+CAMPUSES.forEach(c => {
+  const b = document.createElement('button'); b.setAttribute('role', 'tab'); b.dataset.id = c.id;
+  b.append(document.createTextNode(c.tab));
+  const sm = document.createElement('small'); sm.textContent = c.tabSub; b.append(sm);
+  b.onclick = () => { if(C.id !== c.id) setCampus(c.id, true); };
+  tabsEl.append(b);
+});
+function setCampus(id, push){
+  C = byCampus[id] || DVC;
+  byId = Object.fromEntries(C.buildings.map(b => [b.id, b]));
+  selected = null;
+  tabsEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.id === C.id ? 'true' : 'false'));
+  document.getElementById('intro').textContent = C.intro;
+  document.getElementById('credit').textContent = C.credit;
+  const lg = document.getElementById('legend'); lg.textContent = '';
+  C.legend.forEach(([k, t]) => { const li = document.createElement('li'); const sw = document.createElement('span'); sw.className = 'sw ' + k; li.append(sw, document.createTextNode(t)); lg.append(li); });
+  loadRounds();
+  drawCampus();
+  zi = 0; setZoom(0);
+  renderRounds(); renderInfo(); renderIndex(); renderKnow();
+  if(me){ drawMe(); locMessage(); }
+  store('tourney-maps-campus', C.id);
+  if(push){ try { history.replaceState(null, '', '#' + C.id); } catch(e){} }
+}
+function readHash(){
+  const raw = location.hash.slice(1);
+  const i = raw.indexOf('/');
+  const cid = i < 0 ? raw : raw.slice(0, i);
+  let part = i < 0 ? '' : raw.slice(i + 1);
+  try { part = decodeURIComponent(part); } catch(e){}
+  return {cid: byCampus[cid] ? cid : null, part: part.trim()};
+}
+function applyHash(){
+  const {cid, part} = readHash();
+  if(!cid) return false;
+  if(!C || C.id !== cid) setCampus(cid, false);
+  if(part){
+    const lower = part.toLowerCase();
+    const direct = C.buildings.find(b => (b.code || '').toLowerCase() === lower || b.id === lower);
+    const id = direct ? direct.id : detectBuilding(part);
+    if(id){
+      const isRoom = !direct;
+      select(id, {room: isRoom ? part : null});
+      setTimeout(() => { setZoom(Math.max(zi, 1)); centerOn(id); }, 60);
+    }
+  }
+  return true;
+}
+window.addEventListener('hashchange', applyHash);
+
+if(!applyHash()) setCampus(recall('tourney-maps-campus', 'dvc'), false);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(layoutTags);
+})();
+</script>
+</body>
+</html>
